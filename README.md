@@ -39,7 +39,9 @@ python3 skills/quiet-ui/tests/run_tests.py    # 扫描器自检
 
 ## 规则
 
-R1–R21，Python 标准库，无依赖。逐条说明见 [skills/quiet-ui/SKILL.md](skills/quiet-ui/SKILL.md)。
+R1–R21，Python 标准库，无依赖。21 条里最常见的六条长这样，红框是扫描器报的位置：
+
+<img src="assets/rule-examples.png" width="100%" alt="六张规则示例：眉标签、编号标记、分隔符串联、辅助说明、硬编码徽章、无法溯源的证言">
 
 | 编号 | 抓什么 |
 |---|---|
