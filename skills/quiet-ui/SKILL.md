@@ -193,3 +193,19 @@ HUD 只放会变的状态：分数、血量、资源、背包数量。
 
 启发式，会误报也会漏报。**它是尺子，不是判官**：0 条不等于干净，只是没被这套规则抓到。
 自检：`python3 tests/run_tests.py`。
+
+---
+
+## English summary
+
+The rules above are written in Chinese. This is the same set in brief, for English readers and for agents that prefer it.
+
+**Six rules.** Page text may only be: headings, field labels, button verbs, real data, error messages, empty states, legally required text. No subtitles, captions, helper text, tip boxes or eyebrow labels; carry meaning with hierarchy, grouping, whitespace and icons. No greetings, footer credits, "Demo data" tags or summary blocks. Never chain fragments with `·` `•` `|`. Keep `aria-label`, image `alt` and visible input labels — delete words, never controls. Output the page only, reply in one or two sentences.
+
+**Three questions, one answer.** Can the user still finish the task without this string? Does the heading or the layout already say it? Is it a full sentence with adjectives? Any yes means delete.
+
+**Five steps.** List every visible string. Filter each one through the three questions (keep / delete / rewrite). Build only from what survives; a rewrite may restate facts already on screen and nothing else. Run `python3 scripts/audit_copy.py <file>` and aim for zero, marking justified exceptions with an `audit:ok` comment. Reply in two sentences at most.
+
+**Scope.** Interfaces only — web pages, apps, dashboards, charts, landing pages, game HUDs. Not docs, emails or blog posts, where explanation belongs.
+
+The scanner is a ruler, not a judge: zero hits means the rules above did not fire, not that the page is clean.

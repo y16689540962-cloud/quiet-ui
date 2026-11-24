@@ -1,5 +1,7 @@
 # quiet-ui
 
+**中文** · [English](README.en.md) · [日本語](README.ja.md)
+
 一个 Agent Skill，和防御性编程式的网页文案说不。
 
 AI 写界面时习惯补一句解释：怕你没看懂，怕你觉得它没干活，怕你不知道这个功能存在。这些话删掉，页面照样能用。
@@ -139,7 +141,10 @@ matrix/                第一轮 6×3
 matrix2/               第二轮 B/C（规则换回原文）
 shots/                 人眼复核截图
 mark.py                按扫描器输出自动标注页面，用来生成对比图
+scripts/               生成图的脚本，以及双语规则示例页
 skills/quiet-ui/       兜底 skill：SKILL.md + scripts/audit_copy.py + tests/
+README.md .en.md .ja.md   三种语言的说明
+rule.md .en.md .ja.md     常驻规则，三种语言
 ```
 
 `~/.dsh/skills/quiet-ui` 指向 `skills/quiet-ui`，改仓库即改生效的 skill。

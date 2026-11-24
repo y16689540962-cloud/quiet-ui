@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1280px; background: #f5f4f1; font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+         color: #262624; padding: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .card { background: #fff; border: 1px solid #dbd9d3; border-radius: 10px; padding: 20px 22px 16px; min-height: 208px;
+          display: flex; flex-direction: column; }
+  .head { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; }
+  .id { font: 600 11px/1 ui-monospace, SFMono-Regular, monospace; background: #d14235; color: #fff;
+        padding: 3px 6px; border-radius: 3px; }
+  .name { font-size: 13px; color: #6a6863; }
+  .demo { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .why { font-size: 11.5px; line-height: 1.45; color: #8a8880; border-top: 1px solid #eeece7; padding-top: 10px; margin-top: 12px; }
+  .hit { outline: 1.5px dashed #d14235; outline-offset: 4px; width: fit-content; align-self: flex-start; }
+  .eyebrow { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #6366f1; }
+  .h { font-size: 25px; font-weight: 700; letter-spacing: -.01em; }
+  .mono { font: 500 12px/1 ui-monospace, monospace; color: #4a4844; }
+  .status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4a4844; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+  .btn { align-self: flex-start; background: #6366f1; color: #fff; font-size: 13px; padding: 8px 14px; border-radius: 6px; }
+  .small { font-size: 12px; color: #6b7280; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 10px; background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 999px; }
+  .quote { font-size: 13px; line-height: 1.55; color: #3a3833; }
+  .by { font-size: 11px; color: #8a8880; margin-top: 6px; }
+</style></head>
+<body>
+
+  <div class="card">
+    <div class="head"><span class="id">R1</span><span class="name">眉标签 / Eyebrow</span></div>
+    <div class="demo">
+      <div class="eyebrow hit">Introducing Ledger</div>
+      <div class="h">Finance, simplified</div>
+    </div>
+    <div class="why">标题上方的小号大写标签，没说出标题没说的东西<br><span style="color:#a5a29a">Small uppercase label above the heading, saying nothing the heading did not.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><span class="id">R2</span><span class="name">编号标记 / Decorative numbering</span></div>
+    <div class="demo">
+      <div class="mono hit">01 //</div>
+      <div class="eyebrow" style="color:#8a8880">FEATURE</div>
+      <div class="h" style="font-size:19px">Smart sync</div>
+    </div>
+    <div class="why">三个并列功能本来没有先后，编号是装饰<br><span style="color:#a5a29a">Three parallel features have no order. The numbers are decoration.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><span class="id">R3</span><span class="name">分隔符串联 / Separator chain</span></div>
+    <div class="demo">
+      <div class="status hit"><span class="dot"></span><span>Live · v2.4 · All systems operational</span></div>
+    </div>
+    <div class="why">三件不相干的事用中点连成一句，读的人要自己拆开<br><span style="color:#a5a29a">Three unrelated facts glued with a middle dot. The reader has to unpick them.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><span class="id">R5</span><span class="name">辅助说明 / Helper text</span></div>
+    <div class="demo">
+      <div class="btn">Get started</div>
+      <div class="small hit">Click the button above to create your free account in seconds.</div>
+    </div>
+    <div class="why">在解释用户眼前那个按钮，用户已经看见了<br><span style="color:#a5a29a">Explains the button the user is already looking at.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><span class="id">R11</span><span class="name">硬编码徽章 / Hard-coded badge</span></div>
+    <div class="demo">
+      <div class="row"><span class="h" style="font-size:19px">Smart sync</span><span class="pill hit">NEW</span></div>
+    </div>
+    <div class="why">没有对应的数据或状态，这个 NEW 永远是 NEW<br><span style="color:#a5a29a">No data or state behind it. This NEW will always say NEW.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><span class="id">R17</span><span class="name">无法溯源的证言 / Unsourced testimonial</span></div>
+    <div class="demo">
+      <div class="quote hit">“We moved every client project into Sundial in a single week.”</div>
+      <div class="by">Rowan Mesa · Founder, Studio Wren</div>
+    </div>
+    <div class="why">页面里没有任何东西能证明这个人存在过<br><span style="color:#a5a29a">Nothing on the page can prove this person exists.</span></div>
+  </div>
+
+</body></html>
