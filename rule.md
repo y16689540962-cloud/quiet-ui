@@ -1,6 +1,6 @@
 # 界面文案规则
 
-六条，贴在 `AGENTS.md`、`CLAUDE.md` 或项目级 agent 配置里，做界面时就不容易写出解释性小字。装了 [`quiet-ui`](skills/quiet-ui/SKILL.md) 的话可以省掉这一步。
+六条，贴在 `AGENTS.md`、`CLAUDE.md` 或项目级 agent 配置里，让 agent 不再给界面补防御性解释。装了 [`quiet-ui`](skills/quiet-ui/SKILL.md) 的话可以省掉这一步。
 
 ```
 界面文案规则：
