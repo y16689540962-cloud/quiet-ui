@@ -4,11 +4,29 @@
 
 *红框是扫描器报出的位置。*
 
-六个界面、三种配置跑完：加上一条常驻规则，每页的说明文字都归零，整页文字少了四成，标签和按钮没有少。
+**这是一个 Agent Skill**，叫 `quiet-ui`。做界面时按它的六条规则写文字，清理旧页面时按清单删。附一个扫描器，用来数命中的位置，也用来做提交前检查。
 
-仓库里是扫描器、规则原文，和算出这组数字的全部过程。要找的是副标题、图注、提示框、页脚废话、假徽章、`·` 串联的状态串这类文字。
+六个界面、三种配置跑完：加上这条规则，每页的说明文字都归零，整页文字少了四成，标签和按钮没有少。
+
+## 安装
+
+```bash
+npx skills add y16689540962-cloud/ui-copy-kit -g
+```
+
+装上的技能叫 `quiet-ui`，进全局 skill 目录，按 [Agent Skills](https://agentskills.io) 标准被 Claude Code、Codex、Cursor、Gemini CLI、DSH 这类客户端识别。
+
+不装也能用：把仓库链接发给 agent，让它读 [`skills/quiet-ui/SKILL.md`](skills/quiet-ui/SKILL.md) 再动手。扫描器就在根目录，不用安装。
 
 ## 用
+
+装上之后，让它做页面或清理旧页面时会自动适用。也可以直接点名：
+
+```
+用 quiet-ui 清理 src/pages/landing.tsx 的文案
+```
+
+扫描器单独跑：
 
 ```bash
 python3 audit_copy.py page.html               # 列出命中的标记
@@ -18,11 +36,6 @@ python3 skills/quiet-ui/tests/run_tests.py    # 扫描器自检
 ```
 
 某条报得不对、但确有理由（真实状态、法律文字），在那一行加 `audit:ok` 注释即可放行。
-
-## 给 agent 用
-
-把这个仓库的链接丢给 agent，说清要清理哪个文件。规则写在 `skills/quiet-ui/SKILL.md`，
-下面有六条硬规则、五步流程和分组件说明；扫描器是 `audit_copy.py`。不需要安装。
 
 ## 规则
 
