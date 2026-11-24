@@ -74,7 +74,7 @@ NOTICE_CLASS = re.compile(r"tooltip|inline-note|callout|notice|banner|toast|\bhi
 NOTICE_EXEMPT = re.compile(r"error|invalid|danger|warning|\balert\b", re.I)
 SHADCN_DESC = {"carddescription", "alertdescription", "dialogdescription", "sheetdescription",
                "drawerdescription", "formdescription", "popoverdescription", "contextmenudescription"}
-ARROW = re.compile(r"(\u2192|&rarr;|\u203a|\u00bb|\u2794|\u279c|\u27f6)")
+ARROW = re.compile(r"(\u2190|\u2191|\u2192|\u2193|&rarr;|&larr;|\u203a|\u00bb|\u2794|\u279c|\u27f6)")
 BRIDGE = [r"^or\s+(continue|sign|use|choose|pick)\b", r"^or\b.{0,20}$", r"^或(继续|使用|选择)", r"^或者"]
 NUMBERING = [
     r"^\s*0?\d{1,2}\s*(//|/|·|•|\||—|–|-|:|：)\s*$",

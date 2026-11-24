@@ -187,7 +187,7 @@ HUD 只放会变的状态：分数、血量、资源、背包数量。
 | R18 | 衔接词（"or continue with"） |
 | R19 | 提示框 / callout（错误、警告、空状态已豁免） |
 | R20 | shadcn 的 `CardDescription` / `AlertDescription` 等描述组件 |
-| R21 | 链接和按钮后面的 `→` `›` `»` |
+| R21 | 文字里的箭头 `←` `↑` `→` `↓` `›` `»`（CSS 画的箭头看不到） |
 
 启发式，会误报也会漏报。**它是尺子，不是判官**：0 条不等于干净，只是没被这套规则抓到。
 自检：`python3 tests/run_tests.py`。
