@@ -1,4 +1,4 @@
-# ui-copy-kit
+# quiet-ui
 
 <img src="assets/landing-annotated.png" width="100%" alt="优化前后对比：左侧落地页标出 8 处说明文字，右侧同一提示加上常驻规则后为 0 处，中间箭头标注同一提示只多一条常驻规则">
 
@@ -11,7 +11,7 @@
 ## 安装
 
 ```bash
-npx skills add y16689540962-cloud/ui-copy-kit -g
+npx skills add y16689540962-cloud/quiet-ui -g
 ```
 
 装上的技能叫 `quiet-ui`，进全局 skill 目录，按 [Agent Skills](https://agentskills.io) 标准被 Claude Code、Codex、Cursor、Gemini CLI、DSH 这类客户端识别。
