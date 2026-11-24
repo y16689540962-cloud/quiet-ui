@@ -1,5 +1,7 @@
 # ui-copy-kit
 
+<img src="assets/landing-annotated.png" width="100%" alt="同一个提示词下，无规则与规则常驻两版落地页的对比，左侧标出扫描器命中的 8 处">
+
 扫描网页里多余的说明文字：副标题、图注、提示框、页脚废话、假徽章、`·` 串联的状态串，等等。
 
 附一套在 DeepSeek 上跑过的对比数据，用来判断"禁止加解释性小字"这条规则到底有没有用。
@@ -14,6 +16,11 @@ python3 skills/quiet-ui/tests/run_tests.py    # 扫描器自检
 ```
 
 某条报得不对、但确有理由（真实状态、法律文字），在那一行加 `audit:ok` 注释即可放行。
+
+## 给 agent 用
+
+把这个仓库的链接丢给 agent，说清要清理哪个文件。规则写在 `skills/quiet-ui/SKILL.md`，
+下面有六条硬规则、五步流程和分组件说明；扫描器是 `audit_copy.py`。不需要安装。
 
 ## 规则
 
@@ -71,6 +78,10 @@ after-landing.html   tells=0   text_runs=11
 
 A 臂在临时移除规则的窗口里跑（备份、移除、跑完恢复，校验和一致），B/C 在规则常驻下跑。
 
+登录页那一对，红框是扫描器报出的位置：
+
+<img src="assets/auth-annotated.png" width="100%" alt="登录页对比：左侧标出欢迎语、副标题、衔接词、复选框说明和状态点五处命中，右侧为零">
+
 ### 说明
 
 - 无规则时每页 1.5 条，集中在落地页和登录页。仪表盘、设置页、HUD 基本没有这个问题。
@@ -97,6 +108,7 @@ A 臂在临时移除规则的窗口里跑（备份、移除、跑完恢复，校
 
 ```
 audit_copy.py          R1–R21 扫描器
+assets/                README 用的对比图
 fixtures/              校准用的 before/after（unslop-ui，MIT）
 pilot/                 第一组 A/B，含规则事后生效的两版
 matrix/                第一轮 6×3
