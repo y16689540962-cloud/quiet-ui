@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>待办</title>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f3efe5;
+    --paper-lift: #faf7ef;
+    --card: #fffdf7;
+    --segment-active: #fffdf7;
+    --ink: #1b1813;
+    --ink-soft: #3f3a31;
+    --muted: #6f675a;
+    --line: #ddd5c5;
+    --line-strong: #c6bca9;
+    --line-soft: #e8e2d4;
+    --accent: #b8402a;
+    --accent-strong: #a1351f;
+    --accent-wash: rgba(184, 64, 42, .09);
+    --on-accent: #fff8ef;
+    --shadow: 0 1px 2px rgba(60, 48, 28, .04), 0 14px 34px -22px rgba(60, 48, 28, .35);
+    --radius: 13px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --paper: #14110d;
+      --paper-lift: #1b1712;
+      --card: #1f1a14;
+      --segment-active: #2b241b;
+      --ink: #f2ebdd;
+      --ink-soft: #cfc6b5;
+      --muted: #a29886;
+      --line: #332c22;
+      --line-strong: #4a4134;
+      --line-soft: #29231b;
+      --accent: #e77a58;
+      --accent-strong: #f08d6d;
+      --accent-wash: rgba(231, 122, 88, .13);
+      --on-accent: #1c0e08;
+      --shadow: 0 1px 0 rgba(255, 255, 255, .03), 0 18px 40px -26px #000;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    background:
+      radial-gradient(1000px 540px at 50% -12%, var(--paper-lift) 0%, transparent 68%),
+      var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection { background: var(--accent-wash); color: var(--ink); }
+
+  .app {
+    width: min(620px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: clamp(30px, 7vh, 62px) 0 96px;
+  }
+
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  h1 {
+    margin: 0;
+    font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+    font-size: clamp(36px, 7vw, 44px);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: .04em;
+  }
+
+  .stat {
+    margin: 0 0 3px;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .stat .num {
+    margin-right: 3px;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .composer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+    margin-top: 22px;
+    padding: 0 10px 0 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .composer:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 52%, var(--line));
+    box-shadow: var(--shadow), 0 0 0 4px var(--accent-wash);
+  }
+
+  .composer.invalid {
+    border-color: var(--accent);
+    animation: shake .3s ease;
+  }
+
+  .field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+  }
+
+  .field label {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--muted);
+    white-space: nowrap;
+    pointer-events: none;
+    transition: top .18s ease, transform .18s ease, font-size .18s ease;
+  }
+
+  .field input {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 17px 0 2px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 17px;
+    line-height: 1.4;
+    outline: 0;
+  }
+
+  .field.is-float label,
+  .composer:focus-within .field label {
+    top: 2px;
+    transform: none;
+    font-size: 11.5px;
+  }
+
+  .add {
+    flex: none;
+    height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    cursor: pointer;
+    transition: background-color .16s ease, transform .12s ease;
+  }
+
+  .add:hover { background: var(--accent-strong); }
+  .add:active { transform: translateY(1px); }
+  .add:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .error {
+    margin: 7px 2px 0;
+    font-size: 12.5px;
+    color: var(--accent);
+  }
+
+  [hidden] { display: none !important; }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding: 14px 0 12px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: var(--line-soft);
+    border-radius: 10px;
+  }
+
+  .filter {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  }
+
+  .filter:hover { color: var(--ink-soft); }
+
+  .filter[aria-pressed="true"] {
+    background: var(--segment-active);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(50, 40, 20, .07);
+  }
+
+  .count {
+    font-size: 11px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .filter[aria-pressed="true"] .count { color: var(--accent); }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .search-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .search-label {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .search-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-field svg {
+    position: absolute;
+    left: 9px;
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .search-field input {
+    width: 152px;
+    height: 34px;
+    padding: 0 10px 0 28px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    outline: 0;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .search-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-wash);
+  }
+
+  .search-field input::-webkit-search-cancel-button {
+    filter: grayscale(1);
+    opacity: .55;
+  }
+
+  .clear {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color .16s ease;
+  }
+
+  .clear:hover { color: var(--accent); }
+
+  .filter:focus-visible,
+  .clear:focus-visible,
+  .delete:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .tasks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .task {
+    position: relative;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .task::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 4px -12px;
+    border-radius: 10px;
+    background: transparent;
+    transition: background-color .18s ease;
+  }
+
+  .task:hover::before { background: var(--paper-lift); }
+
+  .task-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 16px 8px 16px 0;
+    cursor: pointer;
+  }
+
+  .check {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 50%;
+    transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  }
+
+  .task-main:hover .check { border-color: var(--accent); }
+  .task-main:active .check { transform: scale(.92); }
+
+  .check svg {
+    width: 11px;
+    height: 11px;
+    fill: none;
+    stroke: var(--on-accent);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 16;
+    stroke-dashoffset: 16;
+    transition: stroke-dashoffset .22s ease .04s;
+  }
+
+  .task-main input:checked + .check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .task-main input:checked + .check svg { stroke-dashoffset: 0; }
+
+  .task-main input:focus-visible + .check {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-wash);
+  }
+
+  .text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    transition: color .2s ease;
+  }
+
+  .task.done .text {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--muted);
+    text-decoration-thickness: 1px;
+  }
+
+  .delete {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin-left: 4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    opacity: .45;
+    transition: opacity .16s ease, color .16s ease, background-color .16s ease;
+  }
+
+  .delete svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .task:hover .delete,
+  .delete:focus-visible { opacity: 1; }
+
+  .delete:hover {
+    color: var(--accent);
+    background: var(--accent-wash);
+  }
+
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 64px 0 48px;
+    color: var(--muted);
+  }
+
+  .empty .ring {
+    width: 34px;
+    height: 34px;
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 50%;
+  }
+
+  .empty p {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px); }
+  }
+
+  @media (hover: none) {
+    .delete { opacity: .7; }
+  }
+
+  @media (max-width: 620px) {
+    .app {
+      width: calc(100% - 32px);
+      padding-top: 30px;
+    }
+
+    .toolbar {
+      position: static;
+      padding-top: 16px;
+    }
+
+    .filters { width: 100%; }
+    .filter {
+      flex: 1;
+      justify-content: center;
+      height: 32px;
+    }
+
+    .tools {
+      width: 100%;
+      margin-left: 0;
+      gap: 10px;
+    }
+
+    .search-group {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-field {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-field input {
+      width: 100%;
+      font-size: 16px;
+    }
+
+    .clear { margin-left: auto; }
+    .task::before { inset: 4px -8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="masthead">
+    <h1>待办</h1>
+    <p class="stat" aria-live="polite"><span class="num" id="remaining">0</span> 项未完成</p>
+  </header>
+
+  <form class="composer" id="composer" novalidate>
+    <div class="field">
+      <label for="new-task">新任务</label>
+      <input id="new-task" name="task" type="text" maxlength="120" autocomplete="off">
+    </div>
+    <button class="add" type="submit">添加</button>
+  </form>
+  <p class="error" id="error" role="alert" hidden>请输入任务内容</p>
+
+  <section class="toolbar" aria-label="筛选">
+    <div class="filters" role="group" aria-label="按状态筛选">
+      <button class="filter" type="button" data-filter="all" aria-pressed="true">全部 <span class="count" data-count="all">0</span></button>
+      <button class="filter" type="button" data-filter="active" aria-pressed="false">未完成 <span class="count" data-count="active">0</span></button>
+      <button class="filter" type="button" data-filter="done" aria-pressed="false">已完成 <span class="count" data-count="done">0</span></button>
+    </div>
+    <div class="tools">
+      <div class="search-group">
+        <label class="search-label" for="search">搜索</label>
+        <div class="search-field">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <circle cx="9" cy="9" r="5.5"></circle>
+            <path d="M13.2 13.2 17 17"></path>
+          </svg>
+          <input id="search" name="q" type="search" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <button class="clear" id="clear" type="button" hidden>清除已完成</button>
+    </div>
+  </section>
+
+  <ul class="tasks" id="tasks" aria-label="任务列表"></ul>
+
+  <div class="empty" id="empty" hidden>
+    <span class="ring" aria-hidden="true"></span>
+    <p id="empty-text" role="status"></p>
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'dsh.ui-copy-kit.todo.v1';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const composer = document.getElementById('composer');
+  const field = document.getElementById('new-task');
+  const fieldWrap = field.closest('.field');
+  const error = document.getElementById('error');
+  const tasksEl = document.getElementById('tasks');
+  const emptyEl = document.getElementById('empty');
+  const emptyText = document.getElementById('empty-text');
+  const remainingEl = document.getElementById('remaining');
+  const searchInput = document.getElementById('search');
+  const clearBtn = document.getElementById('clear');
+  const filterButtons = Array.from(document.querySelectorAll('.filter'));
+  const countEls = {
+    all: document.querySelector('[data-count="all"]'),
+    active: document.querySelector('[data-count="active"]'),
+    done: document.querySelector('[data-count="done"]')
+  };
+
+  let filter = 'all';
+  let query = '';
+  let composing = false;
+  let shakeTimer;
+  let tasks = load();
+
+  function uid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function seed() {
+    const now = Date.now();
+    return [
+      { id: uid(), text: '把季度预算表发给财务', done: false, createdAt: now - 1000 * 60 * 42 },
+      { id: uid(), text: '预约周四的牙医', done: false, createdAt: now - 1000 * 60 * 78 },
+      { id: uid(), text: '给阳台的植物换盆', done: false, createdAt: now - 1000 * 60 * 130 },
+      { id: uid(), text: '归还图书馆的书', done: true, createdAt: now - 1000 * 60 * 60 * 26 },
+      { id: uid(), text: '取快递', done: true, createdAt: now - 1000 * 60 * 60 * 30 }
+    ];
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw !== null) {
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved)) {
+          return saved
+            .filter(item => item && typeof item.text === 'string' && item.text.trim())
+            .map(item => ({
+              id: typeof item.id === 'string' && item.id ? item.id : uid(),
+              text: item.text.trim().slice(0, 120),
+              done: Boolean(item.done),
+              createdAt: Number(item.createdAt) || Date.now()
+            }));
+        }
+      }
+    } catch (err) {
+      /* storage unavailable */
+    }
+    return seed();
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
+  function syncStats() {
+    const total = tasks.length;
+    const done = tasks.reduce((count, task) => count + (task.done ? 1 : 0), 0);
+    const active = total - done;
+    remainingEl.textContent = String(active);
+    countEls.all.textContent = String(total);
+    countEls.active.textContent = String(active);
+    countEls.done.textContent = String(done);
+    clearBtn.hidden = done === 0;
+  }
+
+  function emptyMessage() {
+    if (query.trim()) return '没有匹配的任务';
+    if (filter === 'active') return '没有未完成的任务';
+    if (filter === 'done') return '还没有已完成的任务';
+    return '还没有任务';
+  }
+
+  function render() {
+    const needle = query.trim().toLowerCase();
+    const visible = tasks.filter(task => {
+      if (filter === 'active' && task.done) return false;
+      if (filter === 'done' && !task.done) return false;
+      if (needle && !task.text.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+
+    tasksEl.textContent = '';
+    const fragment = document.createDocumentFragment();
+    visible.forEach(task => fragment.appendChild(createRow(task)));
+    tasksEl.appendChild(fragment);
+    tasksEl.hidden = visible.length === 0;
+    emptyEl.hidden = visible.length > 0;
+    if (!visible.length) emptyText.textContent = emptyMessage();
+    syncStats();
+  }
+
+  function createRow(task) {
+    const row = document.createElement('li');
+    row.className = task.done ? 'task done' : 'task';
+    row.dataset.id = task.id;
+
+    const main = document.createElement('label');
+    main.className = 'task-main';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.className = 'sr-only';
+    input.checked = task.done;
+    input.addEventListener('change', () => toggleTask(task.id, input.checked, row));
+
+    const box = document.createElement('span');
+    box.className = 'check';
+    box.setAttribute('aria-hidden', 'true');
+    box.innerHTML = '<svg viewBox="0 0 12 12"><path d="M2.2 6.3 4.7 8.8 9.8 3.4"/></svg>';
+
+    const text = document.createElement('span');
+    text.className = 'text';
+    text.textContent = task.text;
+
+    main.append(input, box, text);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'delete';
+    remove.setAttribute('aria-label', '删除：' + task.text);
+    remove.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 6.2h10M8.2 6.2V4.9c0-.45.36-.8.8-.8h2c.44 0 .8.35.8.8v1.3M6.3 6.2l.55 8.6c.03.5.45.9.95.9h4.4c.5 0 .92-.4.95-.9l.55-8.6M8.6 9v4M11.4 9v4"/></svg>';
+    remove.addEventListener('click', () => deleteTask(task.id));
+
+    row.append(main, remove);
+    return row;
+  }
+
+  function toggleTask(id, done, row) {
+    const task = tasks.find(item => item.id === id);
+    if (!task) return;
+    task.done = done;
+    row.classList.toggle('done', done);
+    save();
+    syncStats();
+    const leavesView = (filter === 'active' && done) || (filter === 'done' && !done);
+    if (leavesView) {
+      const visibleRows = Array.from(tasksEl.children);
+      const nextIndex = visibleRows.indexOf(row);
+      collapse(row, () => {
+        render();
+        const checkboxes = Array.from(tasksEl.querySelectorAll('.task input'));
+        const activeFilter = filterButtons.find(button => button.dataset.filter === filter);
+        const target = checkboxes[Math.min(nextIndex, checkboxes.length - 1)] || activeFilter;
+        if (target) target.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  function deleteTask(id) {
+    const row = tasksEl.querySelector('[data-id="' + id + '"]');
+    if (!row) return;
+    const visibleRows = Array.from(tasksEl.children);
+    const nextIndex = visibleRows.indexOf(row);
+    collapse(row, () => {
+      tasks = tasks.filter(task => task.id !== id);
+      save();
+      render();
+      const checkboxes = Array.from(tasksEl.querySelectorAll('.task input'));
+      const activeFilter = filterButtons.find(button => button.dataset.filter === filter);
+      const target = checkboxes[Math.min(nextIndex, checkboxes.length - 1)] || activeFilter;
+      if (target) target.focus({ preventScroll: true });
+    });
+  }
+
+  function collapse(row, done) {
+    if (reduceMotion.matches || typeof row.animate !== 'function') {
+      done();
+      return;
+    }
+    const height = row.getBoundingClientRect().height;
+    row.style.overflow = 'hidden';
+    row.style.pointerEvents = 'none';
+    const animation = row.animate(
+      [
+        { height: height + 'px', opacity: 1, transform: 'translateX(0)' },
+        { height: '0px', opacity: 0, transform: 'translateX(16px)' }
+      ],
+      { duration: 190, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' }
+    );
+    animation.onfinish = done;
+  }
+
+  function setFilter(next, doRender = true) {
+    filter = next;
+    filterButtons.forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.filter === next));
+    });
+    if (doRender) render();
+  }
+
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => setFilter(button.dataset.filter));
+  });
+
+  function showError() {
+    error.hidden = false;
+    composer.classList.remove('invalid');
+    void composer.offsetWidth;
+    composer.classList.add('invalid');
+    clearTimeout(shakeTimer);
+    shakeTimer = setTimeout(() => composer.classList.remove('invalid'), 320);
+    field.focus();
+  }
+
+  function hideError() {
+    error.hidden = true;
+    composer.classList.remove('invalid');
+  }
+
+  composer.addEventListener('submit', event => {
+    event.preventDefault();
+    if (composing) return;
+    const text = field.value.trim();
+    if (!text) {
+      showError();
+      return;
+    }
+    hideError();
+    tasks.unshift({
+      id: uid(),
+      text: text.slice(0, 120),
+      done: false,
+      createdAt: Date.now()
+    });
+    field.value = '';
+    syncFieldLabel();
+    if (filter === 'done') setFilter('all', false);
+    if (query) {
+      query = '';
+      searchInput.value = '';
+    }
+    save();
+    render();
+    field.focus();
+    const first = tasksEl.firstElementChild;
+    if (first && !reduceMotion.matches) {
+      first.animate(
+        [
+          { opacity: 0, transform: 'translateY(-7px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ],
+        { duration: 220, easing: 'cubic-bezier(.22, .61, .36, 1)' }
+      );
+    }
+  });
+
+  function syncFieldLabel() {
+    fieldWrap.classList.toggle('is-float', field.value.length > 0);
+  }
+
+  field.addEventListener('input', () => {
+    syncFieldLabel();
+    if (!error.hidden) hideError();
+  });
+  field.addEventListener('compositionstart', () => { composing = true; });
+  field.addEventListener('compositionend', () => { composing = false; });
+
+  searchInput.addEventListener('input', () => {
+    query = searchInput.value;
+    render();
+  });
+
+  searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && searchInput.value) {
+      event.stopPropagation();
+      searchInput.value = '';
+      query = '';
+      render();
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    const doneIds = new Set(tasks.filter(task => task.done).map(task => task.id));
+    if (!doneIds.size) return;
+    const rows = Array.from(tasksEl.querySelectorAll('.task.done'));
+    rows.forEach((row, index) => {
+      setTimeout(() => collapse(row, () => {}), index * 28);
+    });
+    const wait = reduceMotion.matches ? 0 : 220 + rows.length * 28;
+    setTimeout(() => {
+      tasks = tasks.filter(task => !doneIds.has(task.id));
+      save();
+      render();
+    }, wait);
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (target instanceof Element) {
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+    }
+    event.preventDefault();
+    searchInput.focus();
+  });
+
+  syncFieldLabel();
+  save();
+  render();
+})();
+</script>
+</body>
+</html>

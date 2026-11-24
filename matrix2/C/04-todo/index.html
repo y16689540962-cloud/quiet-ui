@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>待办</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f5f3ef;
+    --field: #fbfaf8;
+    --ink: #1b1a18;
+    --ink-soft: #4f4b45;
+    --muted: #827c73;
+    --done-ink: #6b6660;
+    --strike: #b8b2a6;
+    --line: #e2ddd3;
+    --line-strong: #c9c3b8;
+    --hover: #eeebe4;
+    --danger: #a8442c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-sans-serif, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 28px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .count {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .filters {
+    display: flex;
+    gap: 24px;
+  }
+
+  .filters button {
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    margin: 0;
+    padding: 12px 0;
+    font: inherit;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.12s ease;
+  }
+
+  .filters button:hover { color: var(--ink-soft); }
+
+  .filters button[aria-pressed="true"] { color: var(--ink); }
+
+  .filters button[aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--ink);
+  }
+
+  .search {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 200px;
+    padding: 8px 12px;
+    margin: 0;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    transition: border-color 0.12s ease;
+  }
+
+  .search::placeholder { color: #a8a29a; }
+  .search:hover { border-color: var(--line-strong); }
+
+  .search:focus,
+  .search:focus-visible {
+    outline: none;
+    border-color: var(--ink);
+  }
+
+  .search::-webkit-search-cancel-button,
+  .search::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0 14px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
+    transition: background-color 0.12s ease;
+  }
+
+  .item:hover { background: var(--hover); }
+
+  .item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    background: transparent;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+
+  .item input[type="checkbox"]:hover { border-color: var(--ink-soft); }
+
+  .item input[type="checkbox"]:checked {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .item input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4.5px;
+    height: 8.5px;
+    border: solid var(--paper);
+    border-width: 0 2px 2px 0;
+    transform: rotate(42deg);
+  }
+
+  .text {
+    font-size: 15px;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    transition: color 0.12s ease;
+  }
+
+  .item.done .text {
+    color: var(--done-ink);
+    text-decoration: line-through;
+    text-decoration-color: var(--strike);
+    text-decoration-thickness: 1px;
+  }
+
+  .due {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .due.late { color: var(--danger); }
+
+  .del {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, color 0.12s ease, background-color 0.12s ease;
+  }
+
+  .item:hover .del,
+  .del:focus { opacity: 1; }
+
+  .del:hover {
+    color: var(--ink);
+    background: #e6e1d8;
+  }
+
+  .empty {
+    margin: 0;
+    padding: 64px 12px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .search:focus-visible { outline-offset: 1px; }
+
+  @media (hover: none) {
+    .del { opacity: 1; }
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 40px 18px 72px; }
+    h1 { font-size: 23px; }
+
+    .bar {
+      flex-wrap: wrap;
+      gap: 0;
+      padding-bottom: 12px;
+    }
+
+    .filters { width: 100%; gap: 20px; }
+    .filters button { padding: 10px 0 11px; }
+
+    .search {
+      width: 100%;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+
+    .item { gap: 0 12px; padding: 14px 0; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #151413;
+      --field: #1c1b19;
+      --ink: #eae6df;
+      --ink-soft: #c2bcb2;
+      --muted: #948d84;
+      --done-ink: #a8a199;
+      --strike: #4e4a44;
+      --line: #2b2926;
+      --line-strong: #423f3a;
+      --hover: #1e1d1b;
+      --danger: #dd8a72;
+    }
+
+    .search::placeholder { color: #77716a; }
+    .del:hover { background: #262420; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <h1>待办</h1>
+    <p class="count" id="count" aria-live="polite"></p>
+  </header>
+
+  <div class="bar">
+    <div class="filters" id="filters" role="group" aria-label="筛选">
+      <button type="button" data-filter="all" aria-pressed="true">全部</button>
+      <button type="button" data-filter="open" aria-pressed="false">未完成</button>
+      <button type="button" data-filter="done" aria-pressed="false">已完成</button>
+    </div>
+    <input id="search" class="search" type="search" placeholder="搜索任务" aria-label="搜索任务" autocomplete="off" spellcheck="false">
+  </div>
+
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>没有匹配的任务</p>
+</main>
+
+<script>
+  var store = [
+    { id: 1, text: "回复合作方的合同修改意见", due: "2026-11-25", done: false },
+    { id: 2, text: "把首页的加载骨架补上", due: "2026-11-24", done: false },
+    { id: 3, text: "整理第三季度的素材清单", due: "2026-11-22", done: false },
+    { id: 4, text: "预约下周三的体检", due: "2026-11-26", done: false },
+    { id: 5, text: "退掉不用的云服务器", due: "2026-11-28", done: false },
+    { id: 6, text: "核对报销单据", due: "2026-11-30", done: false },
+    { id: 7, text: "给设计稿补齐深色模式标注", due: "2026-11-20", done: true },
+    { id: 8, text: "更新发票抬头信息", due: "2026-11-18", done: true },
+    { id: 9, text: "整理会议纪要", due: "2026-11-17", done: true }
+  ];
+
+  var listEl = document.getElementById("list");
+  var emptyEl = document.getElementById("empty");
+  var countEl = document.getElementById("count");
+  var filtersEl = document.getElementById("filters");
+  var searchEl = document.getElementById("search");
+
+  var filter = "all";
+  var query = "";
+
+  function startOfDay(date) {
+    var d = new Date(date.getTime());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function dueInfo(iso) {
+    var d = startOfDay(new Date(iso + "T00:00:00"));
+    var today = startOfDay(new Date());
+    var diff = Math.round((d - today) / 86400000);
+    var label;
+    if (diff === 0) label = "今天";
+    else if (diff === 1) label = "明天";
+    else if (diff === -1) label = "昨天";
+    else label = (d.getMonth() + 1) + "月" + d.getDate() + "日";
+    return { label: label, late: diff < 0 };
+  }
+
+  function visibleTasks() {
+    var term = query.trim().toLowerCase();
+    return store.filter(function (task) {
+      if (filter === "open" && task.done) return false;
+      if (filter === "done" && !task.done) return false;
+      if (term && task.text.toLowerCase().indexOf(term) === -1) return false;
+      return true;
+    });
+  }
+
+  function buildRow(task, index) {
+    var li = document.createElement("li");
+    li.className = "item" + (task.done ? " done" : "");
+
+    var box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = task.done;
+    box.setAttribute("aria-label", task.text);
+    box.addEventListener("change", function () {
+      task.done = box.checked;
+      var position = index;
+      render();
+      restoreFocus(position);
+    });
+
+    var text = document.createElement("span");
+    text.className = "text";
+    text.textContent = task.text;
+
+    var info = dueInfo(task.due);
+    var due = document.createElement("span");
+    due.className = "due" + (info.late && !task.done ? " late" : "");
+    due.textContent = info.label;
+
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "del";
+    del.setAttribute("aria-label", "删除：" + task.text);
+    del.innerHTML =
+      '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">' +
+      '<path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+      "</svg>";
+    del.addEventListener("click", function () {
+      store = store.filter(function (item) { return item.id !== task.id; });
+      render();
+      var buttons = listEl.querySelectorAll(".del");
+      if (buttons.length > 0) {
+        buttons[Math.min(index, buttons.length - 1)].focus();
+      } else {
+        var active = filtersEl.querySelector('button[aria-pressed="true"]');
+        if (active) active.focus();
+      }
+    });
+
+    li.appendChild(box);
+    li.appendChild(text);
+    li.appendChild(due);
+    li.appendChild(del);
+    return li;
+  }
+
+  function restoreFocus(position) {
+    var boxes = listEl.querySelectorAll('input[type="checkbox"]');
+    if (boxes.length > 0) {
+      var target = boxes[Math.min(Math.max(position, 0), boxes.length - 1)];
+      target.focus();
+      return;
+    }
+    var active = filtersEl.querySelector('button[aria-pressed="true"]');
+    if (active) active.focus();
+  }
+
+  function render() {
+    var rows = visibleTasks();
+    listEl.textContent = "";
+    rows.forEach(function (task, index) {
+      listEl.appendChild(buildRow(task, index));
+    });
+    emptyEl.hidden = rows.length > 0;
+    listEl.hidden = rows.length === 0;
+
+    var open = store.filter(function (task) { return !task.done; }).length;
+    countEl.textContent = open + " 项未完成";
+  }
+
+  filtersEl.addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-filter]");
+    if (!button) return;
+    filter = button.dataset.filter;
+    Array.prototype.forEach.call(filtersEl.querySelectorAll("button"), function (item) {
+      item.setAttribute("aria-pressed", String(item === button));
+    });
+    render();
+  });
+
+  searchEl.addEventListener("input", function () {
+    query = searchEl.value;
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

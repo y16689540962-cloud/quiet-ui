@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>HUD</title>
+<style>
+  :root {
+    --pad: clamp(14px, 2.1vw, 30px);
+    --bone: #ece6d6;
+    --dim: rgba(236, 230, 214, 0.58);
+    --faint: rgba(236, 230, 214, 0.34);
+    --hair: rgba(236, 230, 214, 0.16);
+    --hair-2: rgba(236, 230, 214, 0.38);
+    --plate-bg: linear-gradient(180deg, rgba(10, 16, 16, 0.74), rgba(7, 12, 11, 0.55));
+    --hp: #ff7146;
+    --hp-deep: #80351f;
+    --sh: #92d8d0;
+    --sh-deep: #24423f;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #06100e;
+    color: var(--bone);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    user-select: none;
+  }
+
+  /* ---------- scene ---------- */
+
+  .scene {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .scene__sky {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(46% 32% at 67% 59%, rgba(255, 172, 106, 0.26) 0%, rgba(255, 150, 90, 0) 70%),
+      radial-gradient(90% 58% at 4% -4%, rgba(62, 128, 126, 0.2) 0%, rgba(62, 128, 126, 0) 62%),
+      linear-gradient(180deg, #040c0c 0%, #071414 20%, #0c2120 36%, #153230 49%, #27392f 55.5%, #3c4032 59%, #20221a 62%, #0b1210 74%, #050a08 100%);
+  }
+
+  .scene__sun {
+    position: absolute;
+    left: 67%;
+    top: 58.6%;
+    width: min(26vw, 300px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 232, 192, 0.6) 0%, rgba(255, 196, 138, 0.3) 14%, rgba(255, 160, 100, 0.1) 32%, rgba(255, 150, 90, 0) 62%);
+  }
+
+  .scene__ridge {
+    position: absolute;
+    left: -2%;
+    width: 104%;
+    bottom: 0;
+  }
+
+  .scene__ridge--far {
+    height: 45%;
+    background: linear-gradient(180deg, #20322d 0%, #132320 34%, #0a1412 72%);
+    filter: drop-shadow(0 -1px 0 rgba(255, 196, 142, 0.16));
+    clip-path: polygon(0 50%, 4% 47%, 8% 51%, 12% 45%, 16% 49%, 20% 43%, 24% 47%, 29% 40%, 33% 45%, 37% 39%, 41% 44%, 45% 38%, 50% 43%, 54% 40%, 59% 45%, 63% 41%, 68% 46%, 72% 42%, 77% 46%, 81% 41%, 86% 45%, 90% 42%, 95% 46%, 100% 44%, 100% 100%, 0 100%);
+    opacity: 0.9;
+  }
+
+  .scene__ridge--near {
+    height: 29%;
+    background: linear-gradient(180deg, #0e1b18 0%, #070f0d 70%);
+    filter: drop-shadow(0 -1px 0 rgba(255, 196, 142, 0.1));
+    clip-path: polygon(0 58%, 5% 52%, 9% 56%, 14% 48%, 19% 54%, 24% 46%, 29% 53%, 34% 45%, 39% 52%, 44% 46%, 49% 54%, 54% 47%, 59% 53%, 64% 44%, 69% 52%, 74% 46%, 79% 53%, 84% 47%, 89% 54%, 94% 48%, 100% 52%, 100% 100%, 0 100%);
+  }
+
+  .scene__haze {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 56.6%;
+    height: 4.8%;
+    background: linear-gradient(180deg, rgba(255, 196, 142, 0) 0%, rgba(255, 196, 142, 0.12) 58%, rgba(255, 196, 142, 0) 100%);
+    filter: blur(2px);
+  }
+
+  .scene__ground {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 34%;
+    background:
+      radial-gradient(46% 100% at 67% 0%, rgba(255, 150, 90, 0.15) 0%, rgba(255, 150, 90, 0) 72%),
+      linear-gradient(180deg, rgba(4, 9, 8, 0) 0%, rgba(4, 9, 8, 0.62) 42%, #040908 100%);
+  }
+
+  .scene__grade {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 92% at 50% 44%, rgba(0, 0, 0, 0) 38%, rgba(3, 7, 7, 0.58) 100%),
+      linear-gradient(180deg, rgba(3, 8, 8, 0.6) 0%, rgba(3, 8, 8, 0) 18%, rgba(3, 8, 8, 0) 72%, rgba(3, 8, 8, 0.74) 100%);
+  }
+
+  /* ---------- plates ---------- */
+
+  .plate {
+    position: absolute;
+    background: var(--plate-bg);
+    border: 1px solid var(--hair);
+    box-shadow: 0 20px 44px -30px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(9px) saturate(1.08);
+    -webkit-backdrop-filter: blur(9px) saturate(1.08);
+    animation: plate-in 520ms ease-out both;
+  }
+
+  .plate::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--hair-2), var(--hair-2)) left top / 9px 1px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) left top / 1px 9px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) right top / 9px 1px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) right top / 1px 9px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) left bottom / 9px 1px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) left bottom / 1px 9px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) right bottom / 9px 1px no-repeat,
+      linear-gradient(var(--hair-2), var(--hair-2)) right bottom / 1px 9px no-repeat;
+  }
+
+  @keyframes plate-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ---------- vitals ---------- */
+
+  .vitals {
+    top: var(--pad);
+    left: var(--pad);
+    width: clamp(222px, 23vw, 320px);
+    padding: 12px 14px 14px;
+  }
+
+  .callsign {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--bone);
+  }
+
+  .callsign::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--hair);
+  }
+
+  .meter {
+    display: grid;
+    grid-template-columns: 18px 1fr 30px;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .meter + .meter { margin-top: 9px; }
+
+  .meter__key {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: rgba(236, 230, 214, 0.46);
+  }
+
+  .meter__track {
+    position: relative;
+    height: 9px;
+    background: rgba(236, 230, 214, 0.07);
+    overflow: hidden;
+  }
+
+  .meter--hp .meter__track { height: 11px; }
+
+  .meter__loss {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--loss, 0) * 1%);
+    background: var(--hp-deep);
+    opacity: 0.55;
+  }
+
+  .meter__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--v, 0) * 1%);
+    background: #f0603a;
+  }
+
+  .meter__fill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 235, 220, 0.45);
+  }
+
+  .meter--hp .meter__fill { background: linear-gradient(90deg, #d94a28 0%, #ff8256 100%); }
+
+  .meter--sh .meter__fill { background: linear-gradient(90deg, #5fb6ae 0%, #a8e6df 100%); }
+
+  .meter--sh .meter__fill::after { background: rgba(230, 255, 252, 0.5); }
+
+  .meter__track::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(4, 8, 8, 0.72) calc(10% - 1px) 10%);
+  }
+
+  .meter--sh .meter__track::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: repeating-linear-gradient(135deg, rgba(6, 14, 13, 0.28) 0 2px, transparent 2px 5px);
+  }
+
+  .meter__num {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--bone);
+  }
+
+  .meter--sh .meter__num {
+    font-size: 13px;
+    color: var(--sh);
+  }
+
+  /* ---------- score ---------- */
+
+  .score {
+    top: var(--pad);
+    right: var(--pad);
+    width: clamp(154px, 16vw, 204px);
+    padding: 11px 14px 13px;
+    text-align: right;
+  }
+
+  .score__label {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: var(--faint);
+  }
+
+  .score__value {
+    margin-top: 5px;
+    font-family: var(--mono);
+    font-size: clamp(24px, 2.5vw, 32px);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--bone);
+  }
+
+  .score__level {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 15px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--dim);
+  }
+
+  .score__level b {
+    font-weight: 600;
+    color: var(--bone);
+  }
+
+  .xp {
+    position: relative;
+    height: 2px;
+    margin-top: 8px;
+    background: rgba(236, 230, 214, 0.13);
+  }
+
+  .xp i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--v, 0) * 1%);
+    background: rgba(236, 230, 214, 0.72);
+  }
+
+  /* ---------- compass ---------- */
+
+  .compass {
+    position: absolute;
+    top: calc(var(--pad) + 1px);
+    left: 50%;
+    width: clamp(200px, 24vw, 320px);
+    height: 30px;
+    transform: translateX(-50%);
+    opacity: 0.95;
+  }
+
+  .compass__band {
+    position: absolute;
+    inset: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  }
+
+  .compass__minor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 7px;
+    background: repeating-linear-gradient(90deg, var(--hair-2) 0 1px, transparent 1px 8px);
+    opacity: 0.5;
+  }
+
+  .compass__tick {
+    position: absolute;
+    bottom: 0;
+    width: 1px;
+    height: 13px;
+    background: var(--dim);
+    transform: translateX(-1px);
+  }
+
+  .compass__tick--major {
+    height: 16px;
+    background: var(--bone);
+    opacity: 0.85;
+  }
+
+  .compass__mark {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    color: rgba(236, 230, 214, 0.66);
+  }
+
+  .compass__mark--n { color: var(--bone); }
+
+  .compass__cursor {
+    position: absolute;
+    left: 50%;
+    top: -6px;
+    width: 0;
+    height: 0;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-top: 4px solid var(--bone);
+    transform: translateX(-50%);
+    opacity: 0.8;
+  }
+
+  /* ---------- ammo ---------- */
+
+  .ammo {
+    bottom: var(--pad);
+    left: var(--pad);
+    padding: 10px 14px 12px;
+    min-width: 148px;
+  }
+
+  .ammo__name {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: var(--dim);
+  }
+
+  .ammo__count {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .ammo__mag {
+    font-size: clamp(26px, 2.8vw, 33px);
+    font-weight: 600;
+    color: var(--bone);
+  }
+
+  .ammo__sep {
+    font-size: 15px;
+    color: var(--faint);
+  }
+
+  .ammo__reserve {
+    font-size: 14px;
+    color: var(--dim);
+  }
+
+  /* ---------- pack ---------- */
+
+  .pack {
+    bottom: var(--pad);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 7px;
+    margin: 0;
+    list-style: none;
+  }
+
+  .slot {
+    position: relative;
+    width: clamp(38px, 4.4vw, 62px);
+    height: clamp(38px, 4.4vw, 62px);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--hair);
+    background: rgba(7, 12, 11, 0.42);
+    color: rgba(236, 230, 214, 0.8);
+  }
+
+  .slot__key {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    font-family: var(--mono);
+    font-size: 8px;
+    line-height: 1;
+    color: var(--faint);
+  }
+
+  .slot__qty {
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--bone);
+  }
+
+  .slot svg {
+    width: 58%;
+    height: 58%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+  }
+
+  .slot--on {
+    border-color: rgba(236, 230, 214, 0.58);
+    background: rgba(236, 230, 214, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(236, 230, 214, 0.08);
+  }
+
+  .slot--on .slot__key {
+    color: #07100e;
+    background: var(--bone);
+    padding: 2px 2px 1px;
+  }
+
+  /* ---------- map ---------- */
+
+  .map {
+    bottom: var(--pad);
+    right: var(--pad);
+    width: clamp(118px, 12.4vw, 168px);
+    height: clamp(118px, 12.4vw, 168px);
+    padding: 7px;
+  }
+
+  .map__frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--hair);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 46%, rgba(22, 44, 42, 0.94), rgba(5, 11, 10, 0.98));
+  }
+
+  .map__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(236, 230, 214, 0.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(236, 230, 214, 0.16) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-position: center;
+  }
+
+  .map__terrain {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .map__rings {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 0 32.4%, rgba(236, 230, 214, 0.14) 32.4% 33.2%, transparent 33.2%),
+      radial-gradient(circle at 50% 50%, transparent 0 65.4%, rgba(236, 230, 214, 0.14) 65.4% 66.2%, transparent 66.2%);
+  }
+
+  .map__sweep {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(146, 216, 208, 0.3) 0deg, rgba(146, 216, 208, 0.07) 30deg, rgba(146, 216, 208, 0) 62deg, rgba(146, 216, 208, 0) 360deg);
+    animation: sweep 9s linear infinite;
+  }
+
+  @keyframes sweep {
+    to { transform: rotate(360deg); }
+  }
+
+  .map__player {
+    position: absolute;
+    left: 50%;
+    top: 52%;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 9px solid var(--bone);
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+  }
+
+  .map__obj {
+    position: absolute;
+    left: 71%;
+    top: 33%;
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--sh);
+    transform: translate(-50%, -50%) rotate(45deg);
+    box-shadow: 0 0 0 3px rgba(146, 216, 208, 0.1);
+  }
+
+  .map__n {
+    position: absolute;
+    left: 50%;
+    top: 5px;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    color: rgba(236, 230, 214, 0.55);
+  }
+
+  /* ---------- reticle ---------- */
+
+  .reticle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 36px;
+    height: 36px;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+  }
+
+  .reticle span {
+    position: absolute;
+    background: var(--bone);
+  }
+
+  .reticle .r-t,
+  .reticle .r-b {
+    left: 50%;
+    width: 1px;
+    height: 8px;
+    margin-left: -0.5px;
+  }
+
+  .reticle .r-t { top: 0; }
+  .reticle .r-b { bottom: 0; }
+
+  .reticle .r-l,
+  .reticle .r-r {
+    top: 50%;
+    height: 1px;
+    width: 8px;
+    margin-top: -0.5px;
+  }
+
+  .reticle .r-l { left: 0; }
+  .reticle .r-r { right: 0; }
+
+  .reticle .r-dot {
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 2px;
+    margin: -1px 0 0 -1px;
+    background: rgba(236, 230, 214, 0.9);
+  }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 900px) {
+    .compass { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .ammo { display: none; }
+  }
+
+  @media (max-width: 620px) {
+    .vitals { width: 196px; }
+    .score { width: 142px; }
+    .score__value { font-size: 22px; }
+    .pack { gap: 5px; padding: 6px; }
+    .slot { width: 38px; height: 38px; }
+    .map { width: 100px; height: 100px; padding: 5px; }
+  }
+
+  @media (max-width: 520px) {
+    .map {
+      bottom: calc(var(--pad) + 60px);
+      width: 88px;
+      height: 88px;
+    }
+    .vitals { padding: 10px 11px 12px; }
+    .slot__qty { font-size: 9px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .plate { animation: none; }
+    .map__sweep { animation: none; opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="scene" aria-hidden="true">
+    <div class="scene__sky"></div>
+    <div class="scene__sun"></div>
+    <div class="scene__ridge scene__ridge--far"></div>
+    <div class="scene__haze"></div>
+    <div class="scene__ridge scene__ridge--near"></div>
+    <div class="scene__ground"></div>
+    <div class="scene__grade"></div>
+  </div>
+
+  <main class="hud">
+
+    <div class="compass" aria-hidden="true">
+      <div class="compass__cursor"></div>
+      <div class="compass__band">
+        <span class="compass__mark" style="left:25%">W</span>
+        <span class="compass__mark compass__mark--n" style="left:50%">N</span>
+        <span class="compass__mark" style="left:75%">E</span>
+        <span class="compass__tick compass__tick--major" style="left:25%"></span>
+        <span class="compass__tick compass__tick--major" style="left:50%"></span>
+        <span class="compass__tick compass__tick--major" style="left:75%"></span>
+        <div class="compass__minor"></div>
+      </div>
+    </div>
+
+    <section class="vitals plate" aria-label="Vitals">
+      <span class="callsign">VOSS</span>
+      <div class="meter meter--hp">
+        <span class="meter__key">HP</span>
+        <div class="meter__track" role="progressbar" aria-label="Health" aria-valuenow="84" aria-valuemin="0" aria-valuemax="100">
+          <div class="meter__loss" style="--loss:100"></div>
+          <div class="meter__fill" style="--v:84"></div>
+        </div>
+        <span class="meter__num">84</span>
+      </div>
+      <div class="meter meter--sh">
+        <span class="meter__key">SH</span>
+        <div class="meter__track" role="progressbar" aria-label="Shield" aria-valuenow="32" aria-valuemin="0" aria-valuemax="100">
+          <div class="meter__fill" style="--v:32"></div>
+        </div>
+        <span class="meter__num">32</span>
+      </div>
+    </section>
+
+    <section class="score plate" aria-label="Score and level">
+      <div class="score__label">SCORE</div>
+      <div class="score__value">128&#8201;450</div>
+      <div class="score__level"><span>LEVEL</span><b>12</b></div>
+      <div class="xp" role="progressbar" aria-label="Level progress" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100">
+        <i style="--v:64"></i>
+      </div>
+    </section>
+
+    <section class="ammo plate" aria-label="Ammo">
+      <div class="ammo__name">KX-7 CARBINE</div>
+      <div class="ammo__count">
+        <span class="ammo__mag">24</span>
+        <span class="ammo__sep">/</span>
+        <span class="ammo__reserve">90</span>
+      </div>
+    </section>
+
+    <ul class="pack plate" aria-label="Backpack">
+      <li class="slot" aria-label="Medkit, 2">
+        <span class="slot__key" aria-hidden="true">1</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.75" y="6.25" width="16.5" height="12.5" rx="1.5"/><path d="M9.25 6.25V4.5h5.5v1.75"/><path d="M12 9.75v5.5M9.25 12.5h5.5"/></svg>
+        <span class="slot__qty" aria-hidden="true">2</span>
+      </li>
+      <li class="slot" aria-label="Frag grenade, 3">
+        <span class="slot__key" aria-hidden="true">2</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14.4" r="5.4"/><rect x="9.9" y="6.6" width="4.2" height="2.4" rx="0.7"/><path d="M11.1 4.2h1.8v2.4"/><path d="M14.4 7.4c2 .2 2.9 1.3 2.9 3"/><path d="M8.1 12.6h7.8"/></svg>
+        <span class="slot__qty" aria-hidden="true">3</span>
+      </li>
+      <li class="slot slot--on" aria-label="Ammo, 4, selected">
+        <span class="slot__key" aria-hidden="true">3</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.6" y="10" width="14.8" height="9.4" rx="1"/><path d="M8 10V6.2h3.1V10M13 10V6.2h3V10"/><path d="M6.6 13.6h10.8"/><path d="M8 6.2h3.1M13 6.2h3"/></svg>
+        <span class="slot__qty" aria-hidden="true">4</span>
+      </li>
+      <li class="slot" aria-label="Keycard">
+        <span class="slot__key" aria-hidden="true">4</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="18" height="11" rx="1.5"/><path d="M3.5 10.25h17"/><path d="M6.5 14.25h3.5"/></svg>
+      </li>
+      <li class="slot" aria-label="Empty slot">
+        <span class="slot__key" aria-hidden="true">5</span>
+      </li>
+      <li class="slot" aria-label="Rations, 1">
+        <span class="slot__key" aria-hidden="true">6</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6.9" rx="5.4" ry="1.9"/><path d="M6.6 6.9v10.2c0 1.1 2.4 1.9 5.4 1.9s5.4-.8 5.4-1.9V6.9"/><path d="M6.6 11.6c0 1.1 2.4 1.9 5.4 1.9s5.4-.8 5.4-1.9"/></svg>
+        <span class="slot__qty" aria-hidden="true">1</span>
+      </li>
+      <li class="slot" aria-label="Battery, 5">
+        <span class="slot__key" aria-hidden="true">7</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6.5" width="10" height="13" rx="1"/><path d="M10.5 3.75h3V6.5"/><path d="M7 10.5h10M7 13.75h10"/></svg>
+        <span class="slot__qty" aria-hidden="true">5</span>
+      </li>
+      <li class="slot" aria-label="Empty slot">
+        <span class="slot__key" aria-hidden="true">8</span>
+      </li>
+    </ul>
+
+    <aside class="map plate" aria-label="Minimap">
+      <div class="map__frame">
+        <div class="map__grid"></div>
+        <svg class="map__terrain" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 78 L14 74 L22 62 L34 58 L42 64 L50 54 L60 58 L70 50 L82 55 L100 48 L100 100 L0 100 Z" fill="rgba(146,216,208,0.11)"/>
+          <path d="M6 24 L18 18 L30 24 L28 36 L14 38 Z" fill="rgba(146,216,208,0.07)"/>
+          <path d="M58 12 L74 10 L84 20 L76 30 L60 26 Z" fill="rgba(146,216,208,0.06)"/>
+          <path d="M0 70 C 18 64, 30 76, 46 68 S 74 58, 100 64" fill="none" stroke="rgba(236,230,214,0.16)" stroke-width="1" stroke-dasharray="3 3"/>
+        </svg>
+        <div class="map__rings"></div>
+        <div class="map__sweep"></div>
+        <div class="map__obj"></div>
+        <div class="map__player"></div>
+        <span class="map__n">N</span>
+      </div>
+    </aside>
+
+    <div class="reticle" aria-hidden="true">
+      <span class="r-t"></span>
+      <span class="r-r"></span>
+      <span class="r-b"></span>
+      <span class="r-l"></span>
+      <span class="r-dot"></span>
+    </div>
+
+  </main>
+
+</body>
+</html>

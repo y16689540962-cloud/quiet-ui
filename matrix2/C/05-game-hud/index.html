@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>游戏 HUD</title>
+<style>
+  :root{
+    --pad: clamp(16px, 2.6vmin, 34px);
+    --sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --text: #e8eef4;
+    --dim: #8b9aa8;
+    --line: rgba(152,182,204,.18);
+    --gold: #e0a748;
+    --slot: clamp(48px, 7vmin, 70px);
+  }
+
+  *{ box-sizing: border-box }
+  html, body{ height: 100% }
+  body{
+    margin: 0;
+    background: #070a0e;
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- scene ---------- */
+  .scene{ position: fixed; inset: 0; z-index: 0 }
+  .sky{
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      #060a0f 0%, #091119 34%, #0d1822 58%, #0a1119 74%, #06090d 100%);
+  }
+  .glow{
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(52% 26% at 50% 64%, rgba(96,142,172,.24), transparent 74%),
+      radial-gradient(30% 22% at 78% 74%, rgba(224,167,72,.07), transparent 70%),
+      radial-gradient(52% 16% at 50% 101%, rgba(96,138,168,.13), transparent 72%);
+  }
+  .ridge{
+    position: absolute; left: -2%; right: -2%; bottom: 0;
+  }
+  .ridge.far{
+    height: 42%;
+    background: linear-gradient(180deg, #16252f, #101b23 42%, #0b141b 100%);
+    clip-path: polygon(0% 48%, 6% 39%, 12% 45%, 19% 31%, 26% 41%, 33% 34%,
+      40% 43%, 48% 28%, 56% 39%, 63% 32%, 71% 42%, 79% 35%, 87% 44%,
+      94% 38%, 100% 45%, 100% 100%, 0% 100%);
+  }
+  .ridge.near{
+    height: 30%;
+    background: linear-gradient(180deg, #090f15, #05080b);
+    clip-path: polygon(0% 60%, 8% 50%, 17% 58%, 25% 46%, 34% 56%, 44% 48%,
+      53% 59%, 62% 49%, 71% 58%, 80% 50%, 89% 59%, 100% 52%,
+      100% 100%, 0% 100%);
+  }
+  .haze{
+    position: absolute; left: 0; right: 0; bottom: 24%; height: 22%;
+    background: linear-gradient(180deg, transparent, rgba(126,166,196,.10) 45%, transparent);
+    filter: blur(10px);
+  }
+  .vignette{
+    position: absolute; inset: 0;
+    background: radial-gradient(78% 62% at 50% 44%, transparent 38%, rgba(0,0,0,.6) 100%);
+  }
+
+  /* ---------- hud ---------- */
+  .hud{
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  .hud > *{ pointer-events: auto }
+
+  .top-left{
+    position: absolute;
+    top: calc(var(--pad) + env(safe-area-inset-top));
+    left: calc(var(--pad) + env(safe-area-inset-left));
+    width: clamp(226px, 23vw, 292px);
+    display: grid; gap: 11px;
+  }
+
+  .vital-head{
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin-bottom: 5px;
+  }
+  .vital-label{
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    color: var(--dim);
+  }
+  .vital-num{
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 12px; color: #b9c6d2; letter-spacing: .02em;
+  }
+  .vital-num b{ font-size: 15px; font-weight: 600; color: #f1f6fa; letter-spacing: 0 }
+  .vital-num .max{ font-size: 11px; color: #66757f; margin-left: 2px }
+
+  .track{
+    position: relative; height: 14px;
+    background: rgba(4,8,11,.62);
+    box-shadow: inset 0 0 0 1px rgba(152,182,204,.16);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+    overflow: hidden;
+  }
+  .track.slim{ height: 9px }
+  .track .fill{
+    position: absolute; inset: 0 auto 0 0; width: var(--v);
+    transition: width .45s cubic-bezier(.2,.7,.3,1);
+  }
+  .track .fill::after{
+    content:""; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: rgba(255,255,255,.32);
+  }
+  .fill-hp{ background: linear-gradient(180deg, #e0604b, #a2322a) }
+  .fill-sh{
+    background:
+      repeating-linear-gradient(135deg, rgba(226,244,255,.15) 0 2px, transparent 2px 7px),
+      linear-gradient(180deg, #6bb6d9, #2d6c8e);
+  }
+  .track::after{
+    content:""; position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(90deg,
+      rgba(3,6,9,.85) 0 1px, transparent 1px 10%);
+  }
+
+  .top-right{
+    position: absolute;
+    top: calc(var(--pad) + env(safe-area-inset-top));
+    right: calc(var(--pad) + env(safe-area-inset-right));
+    text-align: right;
+    display: grid; gap: 9px; justify-items: end;
+  }
+  .stat{ display: flex; align-items: baseline; gap: 13px }
+  .stat-label{
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--dim);
+  }
+  .stat-value{
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: clamp(26px, 3.1vw, 36px); font-weight: 600; line-height: 1;
+    letter-spacing: -.02em; color: #f4f8fb;
+    text-shadow: 0 2px 14px rgba(0,0,0,.55);
+  }
+  .stat-value .sep{ letter-spacing: -.14em }
+  .stat.small{ width: 100%; justify-content: flex-end; padding-top: 9px; border-top: 1px solid var(--line) }
+  .stat.small .stat-value{ font-size: 20px; color: var(--gold); font-weight: 500 }
+
+  .minimap{
+    position: absolute;
+    right: calc(var(--pad) + env(safe-area-inset-right));
+    bottom: calc(var(--pad) + env(safe-area-inset-bottom));
+    width: clamp(126px, 18vmin, 190px);
+    aspect-ratio: 1 / 1;
+    background:
+      radial-gradient(120% 120% at 50% 48%, rgba(17,28,37,.86), rgba(6,10,14,.94));
+    border: 1px solid rgba(152,182,204,.24);
+    box-shadow:
+      inset 0 0 44px rgba(86,132,164,.12),
+      0 10px 34px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+  .minimap .grid{
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(150,186,210,.11) 0 1px, transparent 1px 25%),
+      repeating-linear-gradient(0deg, rgba(150,186,210,.11) 0 1px, transparent 1px 25%);
+  }
+  .minimap .block{
+    position: absolute;
+    background: rgba(150,186,210,.07);
+    border: 1px solid rgba(150,186,210,.20);
+  }
+  .minimap .here{
+    position: absolute; left: 50%; top: 47%;
+    width: 0; height: 0; transform: translate(-50%,-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 12px solid var(--gold);
+    filter: drop-shadow(0 0 5px rgba(224,167,72,.55));
+  }
+  .minimap .blip{
+    position: absolute; width: 5px; height: 5px;
+    background: #cf4b3d;
+    box-shadow: 0 0 6px rgba(207,75,61,.65);
+  }
+  .minimap .n{
+    position: absolute; top: 5px; right: 7px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: .08em; color: #7e8f9c;
+  }
+
+  .belt{
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--pad) + env(safe-area-inset-bottom));
+    display: flex; gap: clamp(4px, .78vmin, 8px);
+  }
+  .slot{
+    position: relative;
+    width: var(--slot); height: var(--slot);
+    display: grid; place-items: center;
+    background: linear-gradient(180deg, rgba(26,36,46,.72), rgba(9,13,18,.82));
+    border: 1px solid rgba(152,182,204,.17);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 5px 16px rgba(0,0,0,.35);
+    transition: border-color .16s ease, background .16s ease, transform .16s ease;
+  }
+  .slot[data-active]{
+    border-color: rgba(224,167,72,.62);
+    background: linear-gradient(180deg, rgba(56,44,24,.62), rgba(16,14,9,.84));
+    transform: translateY(-2px);
+  }
+  .slot kbd{
+    position: absolute; top: 3px; left: 5px;
+    font-family: var(--mono); font-size: 9px; line-height: 1;
+    letter-spacing: .04em; color: #5c6b78;
+  }
+  .slot[data-active] kbd{ color: rgba(224,167,72,.92) }
+  .slot .n{
+    position: absolute; right: 4px; bottom: 3px;
+    font-family: var(--mono); font-size: 10px; line-height: 1;
+    font-variant-numeric: tabular-nums; color: #cdd7e0;
+    text-shadow: 0 1px 2px rgba(0,0,0,.9);
+  }
+
+  .g-ammo{
+    width: 27px; height: 25px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.22), rgba(0,0,0,.22)),
+      repeating-linear-gradient(90deg, #c9c0ac 0 7px, transparent 7px 10px);
+    clip-path: polygon(
+      0 16%, 3.5px 0, 7px 16%, 7px 100%,
+      10px 100%, 10px 16%, 13.5px 0, 17px 16%, 17px 100%,
+      20px 100%, 20px 16%, 23.5px 0, 27px 16%, 27px 100%,
+      0 100%);
+  }
+  .g-med{
+    position: relative; width: 27px; height: 22px; border-radius: 2px;
+    background: linear-gradient(180deg, #cf6a56, #a4473a);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .g-med::before, .g-med::after{
+    content:""; position: absolute; left: 50%; top: 50%;
+    background: #f6ece6; transform: translate(-50%,-50%);
+  }
+  .g-med::before{ width: 13px; height: 4px }
+  .g-med::after{ width: 4px; height: 13px }
+  .g-frag{
+    position: relative; width: 21px; height: 21px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, #b8ae9a, #6b6355 78%);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+  }
+  .g-frag::before{
+    content:""; position: absolute; left: 50%; top: -4px;
+    width: 7px; height: 5px; transform: translateX(-50%);
+    background: #8b8375; border-radius: 1px;
+  }
+
+  /* 窄屏和近方形视口里，小地图让到背包上方，避免两个角撞在一起 */
+  @media (max-width: 1100px) and (max-aspect-ratio: 6/5){
+    .minimap{
+      bottom: calc(var(--pad) + env(safe-area-inset-bottom) + var(--slot) + 16px);
+    }
+  }
+  @media (max-width: 720px){
+    :root{ --slot: clamp(34px, 8.2vw, 46px) }
+    .minimap{ width: 96px }
+    .top-left{ width: clamp(180px, 52vw, 240px) }
+  }
+  @media (max-width: 520px){
+    .top-left{ width: 168px }
+    .stat-value{ font-size: 24px }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important }
+  }
+</style>
+</head>
+<body>
+
+<div class="scene" aria-hidden="true">
+  <div class="sky"></div>
+  <div class="glow"></div>
+  <div class="ridge far"></div>
+  <div class="ridge near"></div>
+  <div class="haze"></div>
+  <div class="vignette"></div>
+</div>
+
+<main class="hud" aria-label="游戏界面">
+
+  <section class="top-left" aria-label="生命与护盾">
+    <div>
+      <div class="vital-head">
+        <span class="vital-label">生命</span>
+        <span class="vital-num"><b>68</b><span class="max">/100</span></span>
+      </div>
+      <div class="track" role="progressbar" aria-label="生命" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100">
+        <div class="fill fill-hp" style="--v:68%"></div>
+      </div>
+    </div>
+    <div>
+      <div class="vital-head">
+        <span class="vital-label">护盾</span>
+        <span class="vital-num"><b>40</b><span class="max">/60</span></span>
+      </div>
+      <div class="track slim" role="progressbar" aria-label="护盾" aria-valuenow="40" aria-valuemin="0" aria-valuemax="60">
+        <div class="fill fill-sh" style="--v:66%"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="top-right" aria-label="分数与关卡">
+    <div class="stat">
+      <span class="stat-label">分数</span>
+      <span class="stat-value">12<span class="sep">,</span>480</span>
+    </div>
+    <div class="stat small">
+      <span class="stat-label">关卡</span>
+      <span class="stat-value">07</span>
+    </div>
+  </section>
+
+  <section class="minimap" role="img" aria-label="小地图">
+    <div class="grid" aria-hidden="true"></div>
+    <div class="block" style="left:12%;top:16%;width:26%;height:15%" aria-hidden="true"></div>
+    <div class="block" style="left:57%;top:41%;width:23%;height:29%" aria-hidden="true"></div>
+    <div class="block" style="left:18%;top:63%;width:31%;height:13%" aria-hidden="true"></div>
+    <div class="blip" style="left:71%;top:24%" aria-hidden="true"></div>
+    <div class="blip" style="left:33%;top:76%" aria-hidden="true"></div>
+    <div class="here" aria-hidden="true"></div>
+    <span class="n" aria-hidden="true">N</span>
+  </section>
+
+  <div class="belt" role="list" aria-label="背包">
+    <div class="slot" role="listitem" data-active aria-label="弹药 24">
+      <kbd>1</kbd><span class="g-ammo" aria-hidden="true"></span><span class="n">24</span>
+    </div>
+    <div class="slot" role="listitem" aria-label="医疗包 3">
+      <kbd>2</kbd><span class="g-med" aria-hidden="true"></span><span class="n">3</span>
+    </div>
+    <div class="slot" role="listitem" aria-label="手雷 2">
+      <kbd>3</kbd><span class="g-frag" aria-hidden="true"></span><span class="n">2</span>
+    </div>
+    <div class="slot" role="listitem"><kbd>4</kbd></div>
+    <div class="slot" role="listitem"><kbd>5</kbd></div>
+    <div class="slot" role="listitem"><kbd>6</kbd></div>
+    <div class="slot" role="listitem"><kbd>7</kbd></div>
+    <div class="slot" role="listitem"><kbd>8</kbd></div>
+  </div>
+
+</main>
+
+</body>
+</html>

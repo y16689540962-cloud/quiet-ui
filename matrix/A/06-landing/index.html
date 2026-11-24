@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>留白 · 一款安静的笔记应用</title>
+<meta name="description" content="留白是一款把记录做到几乎没有阻力的笔记应用：打开就写，双向链接自动成网，本地优先、端到端加密。">
+<meta name="theme-color" content="#f8f5ef">
+<style>
+  :root{
+    --paper:#f8f5ef;
+    --paper-deep:#f3eee4;
+    --card:#fffdf9;
+    --ink:#1c1a16;
+    --ink-soft:#413c34;
+    --muted:#6f685e;
+    --line:#e3ddd2;
+    --line-strong:#d5cdc0;
+    --accent:#b0432c;
+    --accent-soft:#f1dfd5;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+    --serif:ui-serif,"Iowan Old Style",Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC","SimSun",serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper) radial-gradient(900px 460px at 50% -170px,#fffdf8 0%,rgba(255,253,248,0) 72%) no-repeat;
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  ::selection{background:#efd8cd;color:#16110d}
+  a{-webkit-tap-highlight-color:transparent}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+  .wrap{width:100%;max-width:1120px;margin-inline:auto;padding-inline:28px}
+  .skip{
+    position:absolute;left:-9999px;top:0;z-index:60;
+    background:var(--ink);color:#fdfbf7;padding:10px 16px;border-radius:8px;
+    font-size:14px;text-decoration:none;
+  }
+  .skip:focus{left:16px;top:12px}
+
+  /* ---------- header ---------- */
+  .site-header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(248,245,239,.86);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .header-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:24px;height:72px;
+  }
+  .brand{
+    display:inline-flex;align-items:center;gap:10px;
+    color:var(--ink);text-decoration:none;
+    font-size:17px;font-weight:650;letter-spacing:.08em;
+  }
+  .brand-mark{
+    width:28px;height:28px;border-radius:9px;
+    background:var(--ink);color:#f8f5ef;
+    display:grid;place-items:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);
+  }
+  .brand-mark svg{width:16px;height:16px;display:block}
+  .nav{display:flex;align-items:center;gap:30px;font-size:14.5px}
+  .nav a{color:var(--muted);text-decoration:none;transition:color .18s ease}
+  .nav a:hover{color:var(--ink)}
+  .nav a.is-active{color:var(--ink)}
+  .nav a.is-active::after{
+    content:"";display:block;width:14px;height:1px;margin:5px auto 0;
+    background:var(--accent);
+  }
+
+  /* ---------- hero ---------- */
+  .hero{padding:96px 0 104px}
+  .hero-grid{
+    display:grid;grid-template-columns:1.02fr .98fr;
+    gap:64px;align-items:center;
+  }
+  .hero-grid > *{min-width:0}
+  .hero-copy h1{
+    font-family:var(--serif);
+    font-size:clamp(38px,5vw,58px);
+    font-weight:600;
+    line-height:1.18;
+    letter-spacing:-.02em;
+    margin:0 0 24px;
+  }
+  .hero-copy h1 .accent{color:var(--accent)}
+  .lede{
+    max-width:30em;margin:0 0 30px;
+    color:var(--ink-soft);font-size:17px;line-height:1.9;
+  }
+  .hero-actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .text-link{
+    display:inline-flex;align-items:center;gap:8px;
+    padding-bottom:3px;border-bottom:1px solid var(--line-strong);
+    color:var(--ink);font-size:15px;font-weight:600;text-decoration:none;
+    transition:color .2s ease,border-color .2s ease;
+  }
+  .text-link svg{width:14px;height:14px;transition:transform .22s ease}
+  .text-link:hover{color:var(--accent);border-color:var(--accent)}
+  .text-link:hover svg{transform:translateY(3px)}
+  .hero-meta{
+    margin:26px 0 0;color:var(--muted);
+    font-size:13px;letter-spacing:.02em;
+  }
+
+  .hero-visual{display:grid;place-items:center}
+  .note-stack{position:relative;width:100%;max-width:392px}
+  .sheet{
+    position:absolute;inset:12px -10px -12px 10px;
+    background:rgba(255,253,249,.55);
+    border:1px solid var(--line);border-radius:18px;
+    transform:rotate(-2.8deg);
+  }
+  .note{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 60px -34px rgba(28,26,22,.38),0 8px 20px -16px rgba(28,26,22,.18);
+  }
+  .note-bar{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 18px;border-bottom:1px solid var(--line);
+    color:var(--muted);font-size:11.5px;
+  }
+  .dots{display:flex;gap:5px}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}
+  .dots i:nth-child(2){opacity:.65}
+  .dots i:nth-child(3){opacity:.4}
+  .note-date{font-family:var(--mono);font-size:10.5px;letter-spacing:.01em}
+  .note-kbd{
+    margin-left:auto;
+    font-family:var(--mono);font-size:10.5px;
+    padding:2px 6px;border:1px solid var(--line);border-radius:5px;
+    background:var(--paper);
+  }
+  .note-body{padding:22px 24px 18px}
+  .note-title{
+    font-family:var(--serif);font-size:21px;font-weight:600;
+    letter-spacing:-.01em;line-height:1.4;margin:0 0 4px;
+  }
+  .note-meta{margin:0 0 18px;color:var(--muted);font-size:11.5px}
+  .note-body p{
+    margin:0 0 10px;color:var(--ink-soft);
+    font-size:14px;line-height:1.85;
+  }
+  .note-body mark{
+    background:linear-gradient(transparent 58%,#f0d9ce 58%);
+    color:var(--ink);padding:0 1px;
+  }
+  .note-body ul{
+    list-style:none;margin:12px 0 16px;padding:0;
+    display:grid;gap:7px;
+  }
+  .note-body li{
+    position:relative;padding-left:16px;
+    font-size:13.5px;color:var(--ink-soft);
+  }
+  .note-body li::before{
+    content:"";position:absolute;left:2px;top:.66em;
+    width:4px;height:4px;border-radius:1px;
+    background:var(--accent);opacity:.7;
+  }
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tags span{
+    padding:2px 8px;border:1px solid var(--line);border-radius:999px;
+    color:var(--muted);background:var(--paper);font-size:11.5px;
+  }
+  .note-foot{
+    display:flex;align-items:center;gap:7px;
+    padding:11px 20px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:11px;
+    background:rgba(248,245,239,.6);
+  }
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#5c8a62}
+
+  /* ---------- features ---------- */
+  .features{border-top:1px solid var(--line);padding:96px 0 100px}
+  .section-head{max-width:580px;margin-bottom:56px}
+  .section-head h2{
+    font-family:var(--serif);
+    font-size:clamp(26px,3.2vw,34px);
+    font-weight:600;line-height:1.35;letter-spacing:-.015em;
+    margin:0 0 14px;
+  }
+  .section-head p{margin:0;color:var(--muted);font-size:15.5px;line-height:1.85}
+  .feature-grid{
+    list-style:none;margin:0;padding:0;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:48px 44px;
+  }
+  .feature{padding-top:26px;border-top:1px solid var(--line-strong)}
+  .feature-icon{
+    display:grid;place-items:center;
+    width:34px;height:34px;margin-bottom:18px;
+    border:1px solid #e7dfd2;border-radius:9px;
+    background:var(--paper-deep);color:var(--accent);
+  }
+  .feature-icon svg{width:18px;height:18px;display:block}
+  .feature h3{
+    margin:0 0 10px;
+    font-size:16.5px;font-weight:650;letter-spacing:.005em;
+  }
+  .feature p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.85}
+
+  /* ---------- download ---------- */
+  .download-section{padding:0 0 104px}
+  .download-panel{
+    position:relative;overflow:hidden;isolation:isolate;
+    display:grid;grid-template-columns:minmax(0,1.15fr) minmax(240px,.85fr);
+    align-items:center;gap:48px;
+    padding:64px;border-radius:24px;
+    background:#1c1a16;color:#f6f1e8;text-align:left;
+  }
+  .download-panel::before{
+    content:"";position:absolute;inset:0;z-index:-1;
+    background:radial-gradient(620px 300px at 50% -70%,rgba(176,67,44,.32),rgba(176,67,44,0) 72%);
+  }
+  .download-panel::after{
+    content:"";position:absolute;left:0;right:0;top:0;height:1px;z-index:1;
+    background:linear-gradient(90deg,transparent,rgba(246,241,232,.22),transparent);
+  }
+  .download-copy h2{
+    font-family:var(--serif);
+    font-size:clamp(27px,3.4vw,38px);
+    font-weight:600;line-height:1.4;letter-spacing:-.015em;
+    margin:0 0 16px;
+  }
+  .download-copy p{
+    max-width:30em;margin:0;
+    color:#b8b0a3;font-size:15.5px;line-height:1.85;
+  }
+  .download-action{
+    display:grid;gap:14px;justify-self:end;
+    width:100%;max-width:300px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;
+    padding:15px 30px;border:1px solid rgba(255,255,255,.45);border-radius:11px;
+    background:#f6f1e8;color:#1c1a16;
+    font-family:var(--sans);font-size:15.5px;font-weight:650;
+    text-decoration:none;
+    box-shadow:0 14px 34px -14px rgba(0,0,0,.65);
+    transition:transform .18s ease,background .18s ease;
+  }
+  .btn svg{width:17px;height:17px;display:block}
+  .btn:hover{transform:translateY(-2px);background:#fffdf8}
+  .btn:active{transform:translateY(0)}
+  .download-meta{
+    margin:0;color:#8d8578;
+    font-size:12.5px;letter-spacing:.02em;text-align:center;
+  }
+
+  /* ---------- footer ---------- */
+  .site-footer{
+    border-top:1px solid var(--line);
+    padding:52px 0 36px;
+    color:var(--muted);font-size:13.5px;
+  }
+  .footer-top{display:flex;justify-content:space-between;gap:36px;flex-wrap:wrap}
+  .footer-brand .brand{font-size:15px;letter-spacing:.06em}
+  .footer-brand .brand-mark{width:25px;height:25px;border-radius:8px}
+  .footer-brand .brand-mark svg{width:14px;height:14px}
+  .footer-brand p{margin:10px 0 0;max-width:26em;line-height:1.75}
+  .footer-nav{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;padding-top:6px}
+  .footer-nav a{color:var(--muted);text-decoration:none}
+  .footer-nav a:hover{color:var(--ink)}
+  .footer-bottom{
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    margin-top:40px;padding-top:22px;border-top:1px solid var(--line);
+    color:#756e64;font-size:12.5px;
+  }
+
+  section[id]{scroll-margin-top:88px}
+
+  @media (max-width:940px){
+    .hero{padding:72px 0 80px}
+    .hero-grid{grid-template-columns:1fr;gap:52px}
+    .hero-copy{max-width:600px}
+    .hero-visual{justify-items:center}
+    .note-stack{width:100%;max-width:420px}
+    .features{padding:76px 0 80px}
+    .section-head{margin-bottom:44px}
+    .feature-grid{grid-template-columns:1fr;gap:34px}
+    .download-section{padding-bottom:80px}
+    .download-panel{grid-template-columns:1fr;gap:30px;padding:52px 40px}
+    .download-action{justify-self:start;max-width:320px}
+    .download-meta{text-align:left}
+  }
+
+  @media (max-width:640px){
+    .wrap{padding-inline:22px}
+    .header-inner{height:64px}
+    .nav{gap:18px;font-size:13.5px}
+    .hero{padding:56px 0 64px}
+    .hero-copy h1{font-size:clamp(33px,9vw,42px);line-height:1.22}
+    .lede{font-size:15.5px;line-height:1.85}
+    .hero-meta{font-size:12px}
+    .hero-grid{gap:44px}
+    .note-body{padding:20px 20px 16px}
+    .feature p,.section-head p{font-size:14.5px}
+    .download-panel{padding:40px 22px;border-radius:18px}
+    .download-action{max-width:none}
+    .download-copy p{font-size:14.5px}
+    .btn{width:100%;padding:15px 20px}
+    .download-meta{font-size:12px;text-align:center}
+    .site-footer{padding:40px 0 30px}
+    .footer-nav{gap:20px;padding-top:0}
+    .footer-bottom{margin-top:30px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+</style>
+</head>
+<body id="top">
+<a class="skip" href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top" aria-label="留白首页">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M7 8h10M7 12.5h7M7 17h4"/>
+        </svg>
+      </span>
+      留白
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a class="is-active" href="#features">功能</a>
+      <a href="#download">下载</a>
+      <a href="#about">关于</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1>想法一闪而过，<br><span class="accent">留白</span>替你记住。</h1>
+        <p class="lede">留白是一款安静的笔记应用。打开就能写，不用建文件夹、不用挑模板；写得久了，零散的想法会自己连成一张网。</p>
+        <div class="hero-actions">
+          <a class="text-link" href="#features">
+            看看它能做什么
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4v14"/><path d="M6 12l6 6 6-6"/>
+            </svg>
+          </a>
+        </div>
+        <p class="hero-meta">免费 · 无需注册 · 离线可用</p>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="note-stack">
+          <div class="sheet"></div>
+          <article class="note">
+            <div class="note-bar">
+              <span class="dots"><i></i><i></i><i></i></span>
+              <span class="note-date">11月24日 周二</span>
+              <span class="note-kbd">⌘ K</span>
+            </div>
+            <div class="note-body">
+              <p class="note-title">关于下周的选题</p>
+              <p class="note-meta">3 分钟前 · 工作</p>
+              <p>用户在第一次打开应用的前十秒里，会决定要不要留下。</p>
+              <p>所以别让他先建文件夹——<mark>直接开始写</mark>。</p>
+              <ul>
+                <li>入口只留一个输入框</li>
+                <li>保存这件事，交给我</li>
+              </ul>
+              <div class="tags">
+                <span>#产品</span>
+                <span>#灵感</span>
+              </div>
+            </div>
+            <div class="note-foot">
+              <span class="live-dot"></span>
+              已自动保存
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>少一点操作，多一点记录</h2>
+        <p>好的笔记工具应该退到后面。留白只做三件事，然后把注意力还给你。</p>
+      </div>
+      <ul class="feature-grid">
+        <li class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20h4L18.5 9.5a2.83 2.83 0 1 0-4-4L4 16v4Z"/>
+              <path d="M13.5 6.5l4 4"/>
+            </svg>
+          </span>
+          <h3>打开就写</h3>
+          <p>全局快捷键在任何地方唤起一个小窗口。纯文本、Markdown 都行，写到一半合上电脑也不会丢。</p>
+        </li>
+        <li class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <circle cx="6" cy="6.5" r="2.4"/>
+              <circle cx="18" cy="9.5" r="2.4"/>
+              <circle cx="9" cy="18" r="2.4"/>
+              <path d="M8.3 6.8L15.7 8.9M16.4 11.8l-5.6 4.3"/>
+            </svg>
+          </span>
+          <h3>笔记会自己长出结构</h3>
+          <p>用 [[ ]] 和标签把碎片连起来。时间久了，一张只属于你的知识网会自己浮现，不用刻意整理。</p>
+        </li>
+        <li class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/>
+              <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>
+              <path d="M12 14.5v2"/>
+            </svg>
+          </span>
+          <h3>只存在你的设备上</h3>
+          <p>本地优先，端到端加密同步。断网照样翻查全部笔记，我们看不到你写下的任何内容。</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="download-section" id="download">
+    <div class="wrap">
+      <div class="download-panel">
+        <div class="download-copy">
+          <h2>今天的第一条笔记，<br>从一句话开始。</h2>
+          <p>免费下载桌面版，不需要注册账号。所有笔记默认只保存在你的电脑上，随时可以导出带走。</p>
+        </div>
+        <div class="download-action">
+          <a class="btn" href="#download" aria-label="免费下载留白桌面版">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3.5v11"/>
+              <path d="M7.5 10.5L12 15l4.5-4.5"/>
+              <path d="M4.5 16v2.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V16"/>
+            </svg>
+            免费下载
+          </a>
+          <p class="download-meta">macOS 13+ · Windows 10+ · 安装包约 12 MB</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="about">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="brand" href="#top" aria-label="留白首页">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M7 8h10M7 12.5h7M7 17h4"/>
+            </svg>
+          </span>
+          留白
+        </a>
+        <p>一款让人愿意多写两句的笔记应用。</p>
+      </div>
+      <nav class="footer-nav" aria-label="页脚导航">
+        <a href="#">隐私说明</a>
+        <a href="#">使用条款</a>
+        <a href="mailto:hi@liubai.app">联系我们</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 留白</span>
+      <span>把注意力留给真正重要的东西</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

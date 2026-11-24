@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Meridian 概览</title>
+<style>
+  :root {
+    --paper: #f1eee6;
+    --panel: #fbf9f4;
+    --ink: #1c1b16;
+    --muted: #666052;
+    --faint: #7c7565;
+    --line: #dcd6c7;
+    --line-soft: #e8e2d5;
+    --accent: #1f5b45;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  ::selection { background: #d9e3d5; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .shell {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 32px 64px;
+  }
+
+  .topbar {
+    height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 38px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .brand svg { color: var(--accent); flex: none; }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-size: 13px;
+  }
+
+  .nav a {
+    color: var(--muted);
+    padding: 5px 0 6px;
+    border-bottom: 1.5px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .nav a:hover { color: var(--ink); }
+
+  .nav a[aria-current="page"] {
+    color: var(--ink);
+    font-weight: 500;
+    border-bottom-color: var(--accent);
+  }
+
+  .period {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  h1 {
+    margin: 36px 0 0;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .metrics {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .metric {
+    min-width: 0;
+    padding: 24px 0 26px;
+  }
+
+  .metric + .metric {
+    border-left: 1px solid var(--line);
+    padding-left: 44px;
+  }
+
+  .metric-label {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .metric-value {
+    margin: 12px 0 0;
+    display: flex;
+    align-items: baseline;
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-value .currency {
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: #4b473b;
+    margin-right: 2px;
+  }
+
+  .metric-value .unit {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  .delta {
+    margin: 14px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .delta-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .delta-value svg { flex: none; }
+
+  .delta-label { color: var(--faint); }
+
+  .panel {
+    margin-top: 22px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 21px 26px 6px;
+  }
+
+  .panel-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .unit-note {
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+
+  .link {
+    font-size: 12px;
+    color: var(--accent);
+    padding: 2px 0;
+  }
+
+  .link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .chart {
+    margin: 0;
+    padding: 10px 26px 18px 22px;
+  }
+
+  .plot {
+    --chart-h: 286px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-rows: var(--chart-h) 26px;
+    column-gap: 14px;
+  }
+
+  .axis { position: relative; }
+
+  .axis span {
+    position: absolute;
+    right: 0;
+    transform: translateY(-50%);
+    font-size: 10.5px;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .axis span:nth-child(1) { top: 0; }
+  .axis span:nth-child(2) { top: 25%; }
+  .axis span:nth-child(3) { top: 50%; }
+  .axis span:nth-child(4) { top: 75%; }
+  .axis span:nth-child(5) { top: 100%; }
+
+  .chart-body { position: relative; min-width: 0; }
+
+  .grid { position: absolute; inset: 0; }
+
+  .grid i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .grid i:nth-child(1) { top: 0; }
+  .grid i:nth-child(2) { top: 25%; }
+  .grid i:nth-child(3) { top: 50%; }
+  .grid i:nth-child(4) { top: 75%; }
+  .grid i:nth-child(5) { top: 100%; border-color: var(--line); }
+
+  .trend {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .trend .area { fill: url(#revenueFill); }
+
+  .trend .line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .hits {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    z-index: 2;
+  }
+
+  .hits span {
+    border-radius: 6px 6px 0 0;
+    transition: background 0.15s ease;
+  }
+
+  .hits span:hover { background: rgba(31, 91, 69, 0.045); }
+
+  .endpoint {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--panel);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px rgba(31, 91, 69, 0.12);
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .end-label {
+    position: absolute;
+    right: calc(4.167% + 13px);
+    top: 19.75%;
+    transform: translateY(-58%);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .months {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    padding-top: 9px;
+  }
+
+  .months span {
+    text-align: center;
+    font-size: 11px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .months span.is-current {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .table-wrap {
+    padding: 4px 26px 8px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    padding: 9px 14px 11px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; text-align: right; }
+
+  tbody tr { transition: background 0.15s ease; }
+  tbody tr:hover { background: rgba(31, 91, 69, 0.035); }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .av-1 { background: #e4e9dd; color: #3f5442; border-color: #d8dfcf; }
+  .av-2 { background: #eee4d7; color: #6a5039; border-color: #e5d8c7; }
+  .av-3 { background: #e2e6e6; color: #46524f; border-color: #d6dcda; }
+  .av-4 { background: #ebe1dc; color: #66483e; border-color: #e1d4cd; }
+  .av-5 { background: #e5e8df; color: #4c5742; border-color: #d9dece; }
+  .av-6 { background: #e7e3d8; color: #5b5341; border-color: #ddd6c6; }
+
+  .email { color: var(--muted); font-size: 12.5px; }
+
+  .plan { color: #4a463b; font-size: 12.5px; white-space: nowrap; }
+
+  .time {
+    color: var(--faint);
+    font-size: 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 920px) {
+    .shell { padding: 0 24px 52px; }
+    .metric-value { font-size: 50px; }
+    .metric + .metric { padding-left: 32px; }
+    .chart { padding: 8px 20px 16px 16px; }
+    .plot { --chart-h: 250px; }
+  }
+
+  @media (max-width: 720px) {
+    .shell { padding: 0 18px 40px; }
+    .topbar { height: 64px; gap: 18px; }
+    .brand { font-size: 14px; }
+    .brand svg { width: 20px; height: 20px; }
+    .nav { margin-left: auto; gap: 16px; font-size: 12.5px; }
+    .period { display: none; }
+
+    h1 { margin-top: 30px; font-size: 26px; }
+
+    .metrics {
+      grid-template-columns: 1fr;
+      margin-top: 22px;
+    }
+
+    .metric { padding: 22px 0; }
+
+    .metric + .metric {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+      padding-left: 0;
+    }
+
+    .metric-value { font-size: 46px; margin-top: 10px; }
+
+    .panel { margin-top: 16px; border-radius: 12px; }
+    .panel-head { padding: 18px 18px 4px; }
+
+    .chart { padding: 8px 16px 14px 12px; }
+
+    .plot {
+      --chart-h: 220px;
+      grid-template-columns: 30px minmax(0, 1fr);
+      grid-template-rows: var(--chart-h) 24px;
+      column-gap: 9px;
+    }
+
+    .axis span { font-size: 9.5px; }
+    .months { padding-top: 9px; }
+    .months span { font-size: 9.5px; }
+    .end-label { font-size: 10px; right: calc(4.167% + 10px); }
+
+    .table-wrap { padding: 2px 18px 6px; }
+    .email-col { display: none; }
+    table { font-size: 13px; }
+    th, td { padding-left: 10px; padding-right: 10px; }
+    th:first-child, td:first-child { padding-left: 0; }
+    th:last-child, td:last-child { padding-right: 0; }
+    td { padding-top: 13px; padding-bottom: 13px; }
+    .avatar { width: 26px; height: 26px; }
+  }
+
+  @media (max-width: 360px) {
+    .months span { font-size: 9px; }
+    .month-unit { display: none; }
+
+    .table-wrap { padding-left: 16px; padding-right: 16px; }
+    table { font-size: 12px; }
+    th, td { padding-left: 5px; padding-right: 5px; }
+    .time { font-size: 11px; }
+    .user { gap: 8px; }
+    .avatar { width: 24px; height: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#">
+        <svg width="21" height="21" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M3 17.5V4.5l8 8 8-8v13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-name">Meridian</span>
+      </a>
+      <nav class="nav" aria-label="主导航">
+        <a href="#" aria-current="page">概览</a>
+        <a href="#">客户</a>
+        <a href="#">账单</a>
+        <a href="#">设置</a>
+      </nav>
+      <span class="period">2026年11月</span>
+    </header>
+
+    <main>
+      <h1>概览</h1>
+
+      <section class="metrics" aria-label="关键指标">
+        <div class="metric">
+          <p class="metric-label">本月营收</p>
+          <p class="metric-value">
+            <span class="currency">¥</span><span>128.4</span><span class="unit">万</span>
+          </p>
+          <p class="delta">
+            <span class="delta-value">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 9 9 3M4.5 3H9v4.5"/>
+              </svg>
+              12.4%
+            </span>
+            <span class="delta-label">较上月</span>
+          </p>
+        </div>
+
+        <div class="metric">
+          <p class="metric-label">活跃用户</p>
+          <p class="metric-value"><span>8,420</span></p>
+          <p class="delta">
+            <span class="delta-value">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 9 9 3M4.5 3H9v4.5"/>
+              </svg>
+              6.8%
+            </span>
+            <span class="delta-label">较上月</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="revenue-heading">
+        <div class="panel-head">
+          <h2 id="revenue-heading">近 12 个月营收</h2>
+          <span class="unit-note">万元</span>
+        </div>
+
+        <figure class="chart">
+          <div class="plot">
+            <div class="axis" aria-hidden="true">
+              <span>160</span>
+              <span>120</span>
+              <span>80</span>
+              <span>40</span>
+              <span>0</span>
+            </div>
+
+            <div class="chart-body">
+              <div class="grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+              <svg class="trend" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-labelledby="trend-title">
+                <title id="trend-title">2025 年 12 月至 2026 年 11 月营收趋势，从 72.4 万元增长至 128.4 万元</title>
+                <defs>
+                  <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#1f5b45" stop-opacity="0.16"/>
+                    <stop offset="1" stop-color="#1f5b45" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path class="area" d="M41.67,164.25 C69.44,161.50 97.22,156.56 125.00,156.00 C152.78,155.44 180.56,162.34 208.33,160.88 C236.11,159.41 263.89,150.88 291.67,147.19 C319.44,143.50 347.22,139.34 375.00,138.75 C402.78,138.16 430.56,145.25 458.33,143.62 C486.11,142.00 513.89,133.19 541.67,129.00 C569.44,124.81 597.22,119.41 625.00,118.50 C652.78,117.59 680.56,126.00 708.33,123.56 C736.11,121.12 763.89,110.16 791.67,103.88 C819.44,97.59 847.22,93.31 875.00,85.88 C902.78,78.44 930.56,68.12 958.33,59.25 L958.33,300 L41.67,300 Z"/>
+                <path class="line" d="M41.67,164.25 C69.44,161.50 97.22,156.56 125.00,156.00 C152.78,155.44 180.56,162.34 208.33,160.88 C236.11,159.41 263.89,150.88 291.67,147.19 C319.44,143.50 347.22,139.34 375.00,138.75 C402.78,138.16 430.56,145.25 458.33,143.62 C486.11,142.00 513.89,133.19 541.67,129.00 C569.44,124.81 597.22,119.41 625.00,118.50 C652.78,117.59 680.56,126.00 708.33,123.56 C736.11,121.12 763.89,110.16 791.67,103.88 C819.44,97.59 847.22,93.31 875.00,85.88 C902.78,78.44 930.56,68.12 958.33,59.25"/>
+              </svg>
+
+              <div class="hits" aria-hidden="true">
+                <span title="12月，72.4 万元"></span>
+                <span title="1月，76.8 万元"></span>
+                <span title="2月，74.2 万元"></span>
+                <span title="3月，81.5 万元"></span>
+                <span title="4月，86.0 万元"></span>
+                <span title="5月，83.4 万元"></span>
+                <span title="6月，91.2 万元"></span>
+                <span title="7月，96.8 万元"></span>
+                <span title="8月，94.1 万元"></span>
+                <span title="9月，104.6 万元"></span>
+                <span title="10月，114.2 万元"></span>
+                <span title="11月，128.4 万元"></span>
+              </div>
+
+              <span class="endpoint" style="left: 95.833%; top: 19.75%;" aria-hidden="true"></span>
+              <span class="end-label" aria-hidden="true">128.4</span>
+            </div>
+
+            <div class="months" aria-hidden="true">
+              <span>12<span class="month-unit">月</span></span>
+              <span>1<span class="month-unit">月</span></span>
+              <span>2<span class="month-unit">月</span></span>
+              <span>3<span class="month-unit">月</span></span>
+              <span>4<span class="month-unit">月</span></span>
+              <span>5<span class="month-unit">月</span></span>
+              <span>6<span class="month-unit">月</span></span>
+              <span>7<span class="month-unit">月</span></span>
+              <span>8<span class="month-unit">月</span></span>
+              <span>9<span class="month-unit">月</span></span>
+              <span>10<span class="month-unit">月</span></span>
+              <span class="is-current">11<span class="month-unit">月</span></span>
+            </div>
+          </div>
+        </figure>
+      </section>
+
+      <section class="panel" aria-labelledby="users-heading">
+        <div class="panel-head">
+          <h2 id="users-heading">最近注册用户</h2>
+          <a class="link" href="#">查看全部</a>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="col-user">用户</th>
+                <th scope="col" class="email-col">邮箱</th>
+                <th scope="col">套餐</th>
+                <th scope="col">注册时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-1" aria-hidden="true">陈</span>陈可</span>
+                </td>
+                <td class="email email-col">ke.chen@lumen.cn</td>
+                <td class="plan">企业版</td>
+                <td class="time">今天 09:42</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-2" aria-hidden="true">马</span>马思远</span>
+                </td>
+                <td class="email email-col">siyuan.ma@fieldwork.cn</td>
+                <td class="plan">团队版</td>
+                <td class="time">今天 08:17</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-3" aria-hidden="true">LF</span>Lena Fischer</span>
+                </td>
+                <td class="email email-col">lena@studio-rot.de</td>
+                <td class="plan">专业版</td>
+                <td class="time">昨天 22:05</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-4" aria-hidden="true">周</span>周砚</span>
+                </td>
+                <td class="email email-col">zhouyan@lattice.io</td>
+                <td class="plan">团队版</td>
+                <td class="time">昨天 18:31</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-5" aria-hidden="true">AT</span>Aiko Tanaka</span>
+                </td>
+                <td class="email email-col">aiko@paperplane.jp</td>
+                <td class="plan">免费版</td>
+                <td class="time">11月22日 14:09</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="user"><span class="avatar av-6" aria-hidden="true">戴</span>戴维</span>
+                </td>
+                <td class="email email-col">wei.dai@corvid.com</td>
+                <td class="plan">专业版</td>
+                <td class="time">11月21日 10:26</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

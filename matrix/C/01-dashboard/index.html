@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f5f2ea">
+<title>Basalt</title>
+<style>
+  :root {
+    --paper: #f5f2ea;
+    --panel: #fdfbf6;
+    --ink: #1a1710;
+    --ink-2: #3d382f;
+    --muted: #6b6457;
+    --line: #e2dbcb;
+    --line-strong: #cfc6b1;
+    --accent: #a34a22;
+    --up: #2f6b47;
+    --shell: 1140px;
+    --plot-h: 258px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection { background: #e9dcc6; }
+
+  .shell {
+    width: 100%;
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* header */
+
+  .site-header { border-bottom: 1px solid var(--line); }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 44px;
+    height: 66px;
+  }
+
+  .wordmark {
+    flex: none;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    display: inline-block;
+    padding: 6px 0;
+    color: var(--muted);
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: color 140ms ease;
+  }
+
+  nav a:hover { color: var(--ink); }
+
+  nav a[aria-current="page"] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    color: var(--ink-2);
+    font-size: 13px;
+    letter-spacing: -0.005em;
+  }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: #fffdf8;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* page */
+
+  main { padding: 34px 0 76px; }
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    margin-top: 24px;
+    padding-bottom: 34px;
+  }
+
+  .metric:first-child { padding-right: 40px; }
+
+  .metric + .metric {
+    padding-left: 40px;
+    border-left: 1px solid var(--line);
+  }
+
+  .metric-label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: -0.005em;
+  }
+
+  .metric-value {
+    margin: 4px 0 0;
+    font-size: clamp(34px, 4.6vw, 46px);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.032em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-delta {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 9px 0 0;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .delta { font-weight: 500; }
+  .delta.up { color: var(--up); }
+  .delta .arrow { font-size: 12px; }
+  .delta-note { color: var(--muted); }
+
+  /* panels */
+
+  .panel {
+    margin-top: 26px;
+    padding: 22px 24px 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+
+  .panel h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
+
+  /* chart */
+
+  .plot {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .y-ticks {
+    position: relative;
+    flex: none;
+    width: 44px;
+    height: var(--plot-h);
+  }
+
+  .y-ticks span {
+    position: absolute;
+    right: 0;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .y-ticks span:nth-child(1) { top: 0; }
+  .y-ticks span:nth-child(2) { top: 33.3333%; }
+  .y-ticks span:nth-child(3) { top: 66.6667%; }
+  .y-ticks span:nth-child(4) { top: 100%; }
+
+  .plot-main { flex: 1; min-width: 0; }
+
+  .plot-box {
+    position: relative;
+    height: var(--plot-h);
+  }
+
+  .chart {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .chart .grid line {
+    stroke: var(--line);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart .grid line.base { stroke: var(--line-strong); }
+
+  .chart .area { fill: rgba(26, 23, 16, 0.055); }
+
+  .chart .line {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .end-dot {
+    position: absolute;
+    left: 95.83%;
+    top: 17.23%;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--panel);
+  }
+
+  .x-ticks {
+    display: flex;
+    margin-top: 12px;
+  }
+
+  .x-ticks span {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* table */
+
+  .table-panel { padding: 22px 0 6px; }
+  .table-panel h2 { padding: 0 24px; }
+
+  table {
+    width: 100%;
+    margin-top: 14px;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  th {
+    padding: 0 24px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+
+  td {
+    padding: 13px 24px;
+    border-bottom: 1px solid #efe9dc;
+    color: var(--ink-2);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  tbody tr { transition: background-color 120ms ease; }
+  tbody tr:hover { background: #f7f3e8; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  th:nth-child(2), td:nth-child(2) { width: 104px; }
+  th:nth-child(3), td:nth-child(3) { width: 140px; }
+  th:last-child, td:last-child { text-align: right; width: 156px; }
+
+  .who .name {
+    display: block;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+  }
+
+  .who .mail {
+    display: block;
+    margin-top: 1px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .plan, .source { font-size: 13px; }
+
+  .when {
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* narrow */
+
+  @media (max-width: 900px) {
+    :root { --plot-h: 216px; }
+  }
+
+  @media (max-width: 720px) {
+    :root { --plot-h: 200px; }
+
+    .shell { padding: 0 20px; }
+
+    .bar { gap: 22px; height: 58px; }
+    nav ul { gap: 6px 18px; }
+    nav a { font-size: 13.5px; }
+    .account .who { display: none; }
+
+    main { padding-top: 26px; }
+
+    .metrics {
+      grid-template-columns: minmax(0, 1fr);
+      margin-top: 20px;
+      padding-bottom: 26px;
+    }
+
+    .metric:first-child { padding-right: 0; }
+
+    .metric + .metric {
+      margin-top: 20px;
+      padding-top: 20px;
+      padding-left: 0;
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .panel {
+      margin-top: 20px;
+      padding: 18px 16px 14px;
+      border-radius: 12px;
+    }
+
+    .plot { gap: 10px; margin-top: 14px; }
+    .y-ticks { width: 38px; }
+    .y-ticks span, .x-ticks span { font-size: 11px; }
+    .x-ticks { margin-top: 10px; }
+    .x-ticks .x-alt,
+    .x-ticks .x-alt-end { visibility: hidden; }
+
+    .table-panel { padding: 18px 0 4px; }
+    .table-panel h2 { padding: 0 16px; }
+
+    th, td { padding-left: 16px; padding-right: 16px; }
+    th:nth-child(2), td:nth-child(2),
+    th:nth-child(3), td:nth-child(3) { width: auto; }
+    th:last-child, td:last-child { width: 124px; }
+
+    .plan-head, .plan,
+    .source-head, .source { display: none; }
+  }
+
+  @media (max-width: 600px) {
+    .bar {
+      flex-wrap: wrap;
+      height: auto;
+      padding: 12px 0 9px;
+      gap: 0 12px;
+    }
+
+    nav {
+      order: 3;
+      width: 100%;
+      margin-top: 1px;
+    }
+
+    nav ul { gap: 2px 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="shell bar">
+    <span class="wordmark">Basalt</span>
+
+    <nav aria-label="Primary">
+      <ul>
+        <li><a href="#" aria-current="page">Overview</a></li>
+        <li><a href="#">Customers</a></li>
+        <li><a href="#">Invoices</a></li>
+        <li><a href="#">Reports</a></li>
+      </ul>
+    </nav>
+
+    <div class="account">
+      <span class="who">Mira Okafor</span>
+      <span class="avatar" aria-hidden="true">MO</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="shell">
+    <h1>Overview</h1>
+
+    <section class="metrics" aria-label="Current metrics">
+      <div class="metric">
+        <p class="metric-label">Revenue</p>
+        <p class="metric-value">$248,310</p>
+        <p class="metric-delta">
+          <span class="delta up"><span class="arrow" aria-hidden="true">&#8593;</span>12.4%</span>
+          <span class="delta-note">vs Oct</span>
+        </p>
+      </div>
+
+      <div class="metric">
+        <p class="metric-label">Active users</p>
+        <p class="metric-value">18,492</p>
+        <p class="metric-delta">
+          <span class="delta up"><span class="arrow" aria-hidden="true">&#8593;</span>3.1%</span>
+          <span class="delta-note">vs Oct</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="revenue-heading">
+      <h2 id="revenue-heading">Revenue, last 12 months</h2>
+
+      <div class="plot">
+        <div class="y-ticks" aria-hidden="true">
+          <span>$300k</span>
+          <span>$200k</span>
+          <span>$100k</span>
+          <span>$0</span>
+        </div>
+
+        <div class="plot-main">
+          <div class="plot-box">
+            <svg class="chart" viewBox="0 0 1000 240" preserveAspectRatio="none" role="img" aria-labelledby="chart-title chart-desc">
+              <title id="chart-title">Monthly revenue, December 2024 to November 2025</title>
+              <desc id="chart-desc">Revenue rose from $118,400 in December to $248,300 in November. Growth steepens from September onward.</desc>
+
+              <g class="grid" aria-hidden="true">
+                <line x1="41.7" y1="0" x2="958.3" y2="0"/>
+                <line x1="41.7" y1="80" x2="958.3" y2="80"/>
+                <line x1="41.7" y1="160" x2="958.3" y2="160"/>
+                <line class="base" x1="41.7" y1="240" x2="958.3" y2="240"/>
+              </g>
+
+              <path class="area" d="M 41.7,145.3 C 69.4,144.4 97.2,142.6 125.0,142.6 C 152.8,142.6 180.6,144.9 208.3,144.9 C 236.1,144.9 263.9,140.3 291.7,138.2 C 319.4,136.0 347.2,132.2 375.0,132.2 C 402.8,132.2 430.6,135.0 458.3,135.0 C 486.1,135.0 513.9,127.8 541.7,125.1 C 569.4,122.4 597.2,118.3 625.0,118.3 C 652.8,118.3 680.6,121.0 708.3,121.0 C 736.1,121.0 763.9,108.0 791.7,98.9 C 819.4,89.8 847.2,72.3 875.0,63.3 C 902.8,54.2 930.6,48.7 958.3,41.4 L 958.3,240.0 L 41.7,240.0 Z"/>
+
+              <path class="line" d="M 41.7,145.3 C 69.4,144.4 97.2,142.6 125.0,142.6 C 152.8,142.6 180.6,144.9 208.3,144.9 C 236.1,144.9 263.9,140.3 291.7,138.2 C 319.4,136.0 347.2,132.2 375.0,132.2 C 402.8,132.2 430.6,135.0 458.3,135.0 C 486.1,135.0 513.9,127.8 541.7,125.1 C 569.4,122.4 597.2,118.3 625.0,118.3 C 652.8,118.3 680.6,121.0 708.3,121.0 C 736.1,121.0 763.9,108.0 791.7,98.9 C 819.4,89.8 847.2,72.3 875.0,63.3 C 902.8,54.2 930.6,48.7 958.3,41.4"/>
+            </svg>
+            <span class="end-dot" aria-hidden="true"></span>
+          </div>
+
+          <div class="x-ticks" aria-hidden="true">
+            <span>Dec</span>
+            <span class="x-alt">Jan</span>
+            <span>Feb</span>
+            <span class="x-alt">Mar</span>
+            <span>Apr</span>
+            <span class="x-alt">May</span>
+            <span>Jun</span>
+            <span class="x-alt">Jul</span>
+            <span>Aug</span>
+            <span class="x-alt">Sep</span>
+            <span class="x-alt-end">Oct</span>
+            <span>Nov</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel table-panel" aria-labelledby="signups-heading">
+      <h2 id="signups-heading">Recent signups</h2>
+
+      <table>
+        <caption class="sr-only">Signups between November 21 and November 24</caption>
+        <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col" class="plan-head">Plan</th>
+            <th scope="col" class="source-head">Source</th>
+            <th scope="col">Signed up</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="who">
+              <span class="name">Ana Piedade</span>
+              <span class="mail">ana@piedade.co</span>
+            </td>
+            <td class="plan">Pro</td>
+            <td class="source">Organic</td>
+            <td class="when"><time datetime="2025-11-24T09:41">Nov 24, 09:41</time></td>
+          </tr>
+          <tr>
+            <td class="who">
+              <span class="name">Werner Lund</span>
+              <span class="mail">w.lund@kraftverk.se</span>
+            </td>
+            <td class="plan">Team</td>
+            <td class="source">Referral</td>
+            <td class="when"><time datetime="2025-11-24T08:12">Nov 24, 08:12</time></td>
+          </tr>
+          <tr>
+            <td class="who">
+              <span class="name">Priya Ramanathan</span>
+              <span class="mail">priya@fieldnote.in</span>
+            </td>
+            <td class="plan">Pro</td>
+            <td class="source">Paid</td>
+            <td class="when"><time datetime="2025-11-23T17:36">Nov 23, 17:36</time></td>
+          </tr>
+          <tr>
+            <td class="who">
+              <span class="name">Tomo Ishikawa</span>
+              <span class="mail">tomo@ishikawa.jp</span>
+            </td>
+            <td class="plan">Starter</td>
+            <td class="source">Organic</td>
+            <td class="when"><time datetime="2025-11-23T11:04">Nov 23, 11:04</time></td>
+          </tr>
+          <tr>
+            <td class="who">
+              <span class="name">Nadia Ferrer</span>
+              <span class="mail">nadia@casaferrer.es</span>
+            </td>
+            <td class="plan">Team</td>
+            <td class="source">Partner</td>
+            <td class="when"><time datetime="2025-11-22T15:22">Nov 22, 15:22</time></td>
+          </tr>
+          <tr>
+            <td class="who">
+              <span class="name">Owen Mbeki</span>
+              <span class="mail">owen@thloho.co.za</span>
+            </td>
+            <td class="plan">Starter</td>
+            <td class="source">Referral</td>
+            <td class="when"><time datetime="2025-11-21T10:08">Nov 21, 10:08</time></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+</body>
+</html>

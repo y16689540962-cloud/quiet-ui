@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>待办</title>
+<style>
+  :root{
+    --bg:#f4f1e9;
+    --paper:#fffdf8;
+    --ink:#211e18;
+    --muted:#726b5c;
+    --line:#e3ddd0;
+    --accent:#ae3a28;
+    --accent-soft:#f6e6e0;
+    --shadow:0 1px 2px rgba(33,30,24,.05),0 18px 32px -26px rgba(33,30,24,.35);
+  }
+
+  *,
+  *::before,
+  *::after{box-sizing:border-box;}
+
+  [hidden]{display:none !important;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  ::selection{background:#f0cfc6;color:var(--ink);}
+
+  .app{
+    width:min(100%,720px);
+    margin:0 auto;
+    padding:64px 24px 96px;
+  }
+
+  .head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:26px;
+  }
+
+  h1{
+    margin:0;
+    font-size:30px;
+    line-height:1.2;
+    font-weight:600;
+    letter-spacing:-.028em;
+  }
+
+  .summary{
+    margin:0;
+    font-size:14px;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+
+  .bar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px 16px;
+    margin-bottom:18px;
+  }
+
+  .filters{
+    display:inline-flex;
+    gap:2px;
+    padding:3px;
+    background:#e8e2d4;
+    border-radius:10px;
+  }
+
+  .filters button{
+    appearance:none;
+    -webkit-appearance:none;
+    border:0;
+    background:transparent;
+    color:#5f5849;
+    font:inherit;
+    font-size:14px;
+    line-height:1;
+    padding:8px 11px;
+    border-radius:8px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    user-select:none;
+    transition:background .15s ease,color .15s ease,box-shadow .15s ease;
+  }
+
+  .filters button:hover{color:var(--ink);}
+
+  .filters button[aria-pressed="true"]{
+    background:var(--paper);
+    color:var(--ink);
+    box-shadow:0 1px 2px rgba(33,30,24,.1);
+  }
+
+  .filters .n{
+    font-size:12px;
+    line-height:1;
+    color:#8b8271;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .filters button[aria-pressed="true"] .n{color:var(--accent);}
+
+  .filters button:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+
+  .search{
+    position:relative;
+    flex:0 1 236px;
+    min-width:180px;
+  }
+
+  .search > svg{
+    position:absolute;
+    left:11px;
+    top:50%;
+    width:15px;
+    height:15px;
+    transform:translateY(-50%);
+    color:#948b79;
+    pointer-events:none;
+  }
+
+  .search input{
+    width:100%;
+    appearance:none;
+    -webkit-appearance:none;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+    font:inherit;
+    font-size:14px;
+    line-height:1.3;
+    padding:9px 12px 9px 33px;
+    border-radius:10px;
+    transition:border-color .15s ease,box-shadow .15s ease;
+  }
+
+  .search input::placeholder{color:#9a9284;}
+
+  .search input:focus{
+    outline:none;
+    border-color:#bfae8f;
+    box-shadow:0 0 0 3px rgba(174,58,40,.1);
+  }
+
+  .list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  .task{
+    display:grid;
+    grid-template-columns:24px minmax(0,1fr);
+    gap:12px;
+    align-items:start;
+    padding:15px 18px;
+    transition:background .15s ease;
+  }
+
+  .task + .task{border-top:1px solid var(--line);}
+
+  .task:hover{background:#faf6ec;}
+
+  .tick{
+    position:relative;
+    display:inline-flex;
+    padding:4px;
+    margin:-3px 0 0 -4px;
+    cursor:pointer;
+    border-radius:7px;
+  }
+
+  .tick input{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    margin:0;
+    opacity:0;
+    cursor:pointer;
+  }
+
+  .box{
+    width:18px;
+    height:18px;
+    flex:none;
+    display:grid;
+    place-items:center;
+    border:1.5px solid #c8bfad;
+    border-radius:5px;
+    background:#fff;
+    transition:background .15s ease,border-color .15s ease;
+  }
+
+  .box::after{
+    content:"";
+    width:8px;
+    height:4px;
+    border-left:2px solid #fff;
+    border-bottom:2px solid #fff;
+    transform:translateY(-1px) rotate(-45deg) scale(.4);
+    opacity:0;
+    transition:opacity .12s ease,transform .12s ease;
+  }
+
+  .tick:hover .box{border-color:#aa9d85;}
+
+  .tick input:checked + .box{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+
+  .tick input:checked + .box::after{
+    opacity:1;
+    transform:translateY(-1px) rotate(-45deg) scale(1);
+  }
+
+  .tick input:focus-visible + .box{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+
+  .body{min-width:0;}
+
+  .title{
+    margin:0;
+    font-size:16px;
+    font-weight:500;
+    line-height:1.45;
+    letter-spacing:-.006em;
+    overflow-wrap:anywhere;
+  }
+
+  .task.done .title{
+    color:#8e8778;
+    text-decoration:line-through;
+    text-decoration-color:#c8c0b0;
+    text-decoration-thickness:1.5px;
+  }
+
+  .meta{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px 8px;
+    margin-top:7px;
+    font-size:13px;
+    line-height:1.4;
+    color:var(--muted);
+  }
+
+  .due{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .due svg{
+    width:13px;
+    height:13px;
+    flex:none;
+    opacity:.75;
+  }
+
+  .due.overdue{
+    color:var(--accent);
+    font-weight:500;
+  }
+
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    padding:1px 7px;
+    border-radius:6px;
+    background:#f1ece0;
+    color:#6c6555;
+    font-size:12px;
+    line-height:1.6;
+    white-space:nowrap;
+  }
+
+  .tag.hot{
+    background:var(--accent-soft);
+    color:#9c3523;
+  }
+
+  .empty{
+    margin:0;
+    padding:56px 20px;
+    border:1px dashed #d8d0bf;
+    border-radius:14px;
+    background:rgba(255,253,248,.55);
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  @media (max-width:560px){
+    .app{padding:40px 16px 72px;}
+    h1{font-size:26px;}
+    .search{flex:1 1 100%;}
+    .search input{font-size:16px;}
+    .filters{width:100%;}
+    .filters button{flex:1;justify-content:center;padding:9px 6px;}
+    .task{padding:14px;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="head">
+    <h1>待办</h1>
+    <p class="summary" id="summary" aria-live="polite"></p>
+  </header>
+
+  <div class="bar">
+    <div class="filters" role="group" aria-label="筛选任务">
+      <button type="button" data-filter="all" aria-pressed="true">全部<span class="n">0</span></button>
+      <button type="button" data-filter="open" aria-pressed="false">未完成<span class="n">0</span></button>
+      <button type="button" data-filter="done" aria-pressed="false">已完成<span class="n">0</span></button>
+    </div>
+
+    <div class="search">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.3"/>
+        <path d="M10.2 10.2 14 14" stroke-linecap="round"/>
+      </svg>
+      <input id="q" type="search" placeholder="搜索标题或标签" aria-label="搜索任务" autocomplete="off">
+    </div>
+  </div>
+
+  <ul class="list" id="list" aria-label="任务列表"></ul>
+  <p class="empty" id="empty" hidden>没有匹配的任务</p>
+</main>
+
+<script>
+  (() => {
+    const base = new Date();
+    const at = (days, hours, minutes) => new Date(
+      base.getFullYear(),
+      base.getMonth(),
+      base.getDate() + days,
+      hours,
+      minutes
+    );
+
+    const tasks = [
+      { id: 't1', title: '交房租', due: at(-2, 12, 0), tags: ['家事', '紧急'], done: false },
+      { id: 't2', title: '整理季度复盘材料', due: at(0, 18, 0), tags: ['工作', '写作'], done: false },
+      { id: 't3', title: '预约牙科复诊', due: at(1, 9, 30), tags: ['生活'], done: false },
+      { id: 't4', title: '重写首页文案', due: at(2, 15, 0), tags: ['工作', '文案'], done: false },
+      { id: 't5', title: '读完《设计中的设计》第三章', due: at(6, 21, 0), tags: ['阅读'], done: false },
+      { id: 't6', title: '给妈妈打电话', due: at(0, 20, 30), tags: ['家人'], done: true },
+      { id: 't7', title: '买咖啡豆', due: at(-1, 19, 0), tags: ['生活'], done: true },
+      { id: 't8', title: '回复设计评审意见', due: at(-3, 17, 0), tags: ['工作', '设计'], done: true }
+    ];
+
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+    const summaryEl = document.getElementById('summary');
+    const searchEl = document.getElementById('q');
+    const filterBtns = Array.from(document.querySelectorAll('[data-filter]'));
+
+    const CAL_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><rect x="2.3" y="3.4" width="11.4" height="10.3" rx="2"/><path d="M5.5 2v2.3M10.5 2v2.3M2.3 6.6h11.4"/></svg>';
+
+    let filter = 'all';
+    let query = '';
+
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
+
+    const startOfDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const formatDue = date => {
+      const diff = Math.round((startOfDay(date) - startOfDay(new Date())) / 86400000);
+      const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      let label;
+      if (diff === 0) label = '今天';
+      else if (diff === 1) label = '明天';
+      else if (diff === -1) label = '昨天';
+      else label = `${date.getMonth() + 1}月${date.getDate()}日`;
+      return `${label} ${time}`;
+    };
+
+    const matches = task => {
+      if (filter === 'open' && task.done) return false;
+      if (filter === 'done' && !task.done) return false;
+      const needle = query.trim().toLowerCase();
+      if (!needle) return true;
+      return `${task.title} ${task.tags.join(' ')}`.toLowerCase().includes(needle);
+    };
+
+    function render(focusId) {
+      const counts = {
+        all: tasks.length,
+        open: tasks.filter(task => !task.done).length,
+        done: tasks.filter(task => task.done).length
+      };
+
+      filterBtns.forEach(button => {
+        const key = button.dataset.filter;
+        button.setAttribute('aria-pressed', String(key === filter));
+        button.querySelector('.n').textContent = counts[key];
+      });
+
+      const summary = counts.open === 0 ? '全部完成' : `${counts.open} 项未完成`;
+      if (summaryEl.textContent !== summary) summaryEl.textContent = summary;
+
+      const rows = tasks
+        .filter(matches)
+        .sort((a, b) => (a.done - b.done) || (a.due - b.due));
+      const now = new Date();
+
+      listEl.innerHTML = rows.map(task => {
+        const overdue = !task.done && task.due < now;
+        const label = task.done
+          ? `将“${task.title}”标记为未完成`
+          : `将“${task.title}”标记为已完成`;
+        const tags = task.tags
+          .map(tag => `<span class="tag${tag === '紧急' ? ' hot' : ''}">${escapeHtml(tag)}</span>`)
+          .join('');
+
+        return `<li class="task${task.done ? ' done' : ''}">
+          <label class="tick">
+            <input type="checkbox" data-id="${task.id}"${task.done ? ' checked' : ''} aria-label="${escapeHtml(label)}">
+            <span class="box" aria-hidden="true"></span>
+          </label>
+          <div class="body">
+            <p class="title">${escapeHtml(task.title)}</p>
+            <div class="meta">
+              <span class="due${overdue ? ' overdue' : ''}">${CAL_ICON}${formatDue(task.due)}</span>
+              ${tags}
+            </div>
+          </div>
+        </li>`;
+      }).join('');
+
+      listEl.hidden = rows.length === 0;
+      emptyEl.hidden = rows.length !== 0;
+
+      if (focusId) {
+        const next = listEl.querySelector(`input[data-id="${focusId}"]`);
+        if (next) next.focus();
+        else filterBtns.find(button => button.dataset.filter === filter).focus();
+      }
+    }
+
+    filterBtns.forEach(button => {
+      button.addEventListener('click', () => {
+        filter = button.dataset.filter;
+        render();
+      });
+    });
+
+    searchEl.addEventListener('input', () => {
+      query = searchEl.value;
+      render();
+    });
+
+    listEl.addEventListener('change', event => {
+      const input = event.target.closest('input[type="checkbox"]');
+      if (!input) return;
+      const task = tasks.find(item => item.id === input.dataset.id);
+      if (!task) return;
+      task.done = input.checked;
+      render(input.dataset.id);
+    });
+
+    render();
+  })();
+</script>
+</body>
+</html>

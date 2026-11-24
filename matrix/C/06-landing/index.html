@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>页边 · 本地 Markdown 笔记</title>
+<meta name="description" content="页边把每页笔记存成文件夹里的 Markdown 文件，本地优先，支持全文搜索和历史版本。">
+<style>
+  :root{
+    --bg:#171512;
+    --ink:#f0eade;
+    --muted:#a69d8c;
+    --line:#332f28;
+    --accent:#e2a94a;
+    --accent-soft:#f2bb60;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --shell:1120px;
+    --pad:clamp(20px,5vw,48px);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font:400 16px/1.65 var(--sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  .shell{max-width:var(--shell);margin:0 auto;padding:0 var(--pad)}
+
+  .sr-only{
+    position:absolute;
+    width:1px;
+    height:1px;
+    margin:-1px;
+    padding:0;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    white-space:nowrap;
+    border:0;
+  }
+
+  ::selection{background:rgba(226,169,74,.3);color:#fff}
+
+  a{color:inherit;text-decoration:none}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+  .skip{
+    position:fixed;
+    top:12px;
+    left:12px;
+    z-index:10;
+    padding:10px 14px;
+    border-radius:2px;
+    background:var(--ink);
+    color:var(--bg);
+    font-size:14px;
+    transform:translateY(-160%);
+    transition:transform .16s ease;
+  }
+
+  .skip:focus{transform:none}
+
+  /* ---------- 顶部导航 ---------- */
+  .nav{border-bottom:1px solid var(--line)}
+
+  .nav-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    height:76px;
+  }
+
+  .brand{
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:.06em;
+    color:var(--ink);
+  }
+
+  .brand .period{color:var(--accent)}
+
+  .nav nav{display:flex;gap:32px}
+
+  .nav nav a{
+    padding:6px 0;
+    font-size:14px;
+    color:var(--muted);
+    background-image:linear-gradient(var(--accent),var(--accent));
+    background-repeat:no-repeat;
+    background-position:0 calc(100% - 2px);
+    background-size:0 1px;
+    transition:color .18s ease,background-size .18s ease;
+  }
+
+  .nav nav a:hover{color:var(--ink);background-size:100% 1px}
+
+  /* ---------- 主标题区 ---------- */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+
+  .hero::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background-image:repeating-linear-gradient(to bottom,transparent 0 33px,rgba(240,234,222,.045) 33px 34px);
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 52%,transparent 94%);
+    mask-image:linear-gradient(to bottom,#000 0%,#000 52%,transparent 94%);
+  }
+
+  .hero-grid{
+    position:relative;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 240px;
+    align-items:start;
+    gap:clamp(40px,5vw,64px);
+    padding-top:clamp(72px,11vh,132px);
+    padding-bottom:clamp(64px,9vh,112px);
+  }
+
+  h1{
+    margin:0 0 clamp(34px,5vh,54px);
+    max-width:9.4em;
+    font-family:var(--serif);
+    font-size:clamp(2.25rem,6vw,4.6rem);
+    font-weight:500;
+    line-height:1.14;
+    letter-spacing:.005em;
+  }
+
+  h1 .ext{
+    font-family:var(--mono);
+    margin:0 .08em;
+    font-size:.78em;
+    font-weight:400;
+    letter-spacing:-.02em;
+    color:var(--accent);
+    white-space:nowrap;
+  }
+
+  .cta{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px 32px;
+    border:1px solid var(--accent);
+    border-radius:2px;
+    background:var(--accent);
+    color:#171512;
+    font:600 15.5px/1 var(--sans);
+    letter-spacing:.02em;
+    cursor:pointer;
+    transition:background-color .18s ease,border-color .18s ease,transform .18s ease;
+  }
+
+  .cta:hover{background:var(--accent-soft);border-color:var(--accent-soft);transform:translateY(-1px)}
+
+  .cta:active{transform:none}
+
+  .tree{
+    display:grid;
+    gap:3px;
+    margin-top:14px;
+    padding-left:24px;
+    border-left:1px solid var(--line);
+    font:400 13px/1.9 var(--mono);
+    letter-spacing:.01em;
+    color:var(--muted);
+  }
+
+  .tree span{padding-left:18px}
+
+  .tree .root{padding-left:0;color:var(--ink)}
+
+  .tree .dim{color:#8b8272}
+
+  /* ---------- 功能介绍 ---------- */
+  .features{padding:clamp(56px,8vh,88px) 0 clamp(72px,10vh,112px)}
+
+  .feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+
+  .feature{padding:0 clamp(24px,3vw,40px);border-left:1px solid var(--line)}
+
+  .feature:first-child{padding-left:0;border-left:0}
+
+  .feature:last-child{padding-right:0}
+
+  .feature h3{
+    margin:0 0 12px;
+    font-family:var(--serif);
+    font-size:21px;
+    font-weight:600;
+    line-height:1.4;
+    letter-spacing:.02em;
+  }
+
+  .feature p{
+    margin:0;
+    max-width:24em;
+    color:var(--muted);
+    font-size:15.5px;
+    line-height:1.8;
+  }
+
+  /* ---------- 页脚 ---------- */
+  .foot{border-top:1px solid var(--line)}
+
+  .foot-inner{
+    padding:24px 0 32px;
+    color:var(--muted);
+    font-size:12.5px;
+    letter-spacing:.02em;
+  }
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:44px}
+
+    .tree{
+      max-width:320px;
+      margin-top:36px;
+      padding:0;
+      border-left:0;
+    }
+
+    .feature-grid{grid-template-columns:1fr}
+
+    .feature{
+      margin-top:26px;
+      padding:26px 0 0;
+      border-left:0;
+      border-top:1px solid var(--line);
+    }
+
+    .feature:first-child{margin-top:0;padding-top:0;border-top:0}
+  }
+
+  @media (max-width:560px){
+    .nav-inner{height:64px}
+    .nav nav{gap:22px}
+    .cta{width:100%}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{transition-duration:.001ms !important}
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到主要内容</a>
+
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="#" aria-label="页边 首页">页边<span class="period" aria-hidden="true">.</span></a>
+    <nav aria-label="主导航">
+      <a href="#features">功能</a>
+      <a href="#download">下载</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <h1>笔记是你文件夹里的<wbr><span class="ext">.md</span>文件</h1>
+        <button class="cta" id="download" type="button">下载 macOS 版</button>
+      </div>
+
+      <div class="tree" aria-hidden="true">
+        <span class="root">~/notes</span>
+        <span>daily.md</span>
+        <span>reading.md</span>
+        <span>ideas.md</span>
+        <span class="dim">archive/</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features" aria-labelledby="features-title">
+    <h2 class="sr-only" id="features-title">功能</h2>
+    <div class="shell">
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>本地文件夹</h3>
+          <p>每页笔记都是 .md 文件，存在你选的文件夹里，换台电脑复制过去就能接着写。</p>
+        </article>
+
+        <article class="feature">
+          <h3>全文搜索</h3>
+          <p>按 ⌘K 打开搜索，边打字边出结果，断网时也能搜到本地笔记。</p>
+        </article>
+
+        <article class="feature">
+          <h3>历史版本</h3>
+          <p>每次保存都留一个版本，改坏了随时退回之前的那一版。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="shell foot-inner">© 2026 页边</div>
+</footer>
+
+</body>
+</html>

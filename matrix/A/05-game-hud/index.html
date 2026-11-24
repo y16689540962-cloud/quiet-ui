@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VANGUARD — Sector 07 HUD</title>
+<style>
+  :root {
+    --ink: #05090a;
+    --text: #e9f3ee;
+    --muted: #91a8a0;
+    --faint: rgba(233, 243, 238, 0.38);
+    --line: rgba(198, 230, 219, 0.15);
+    --line-strong: rgba(198, 230, 219, 0.32);
+    --lime: #d9f24b;
+    --cyan: #66d9e8;
+    --hp: #ff5f48;
+    --amber: #ffb457;
+    --pad: clamp(16px, 2.4vw, 34px);
+    --cut: 14px;
+    --map: clamp(142px, 15vw, 190px);
+    --mono: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --notch: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    user-select: none;
+  }
+
+  /* ---------- environment ---------- */
+
+  .scene {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 78% at 50% 116%, rgba(255, 128, 74, 0.16) 0%, rgba(255, 128, 74, 0) 56%),
+      radial-gradient(80% 55% at 8% -4%, rgba(74, 182, 164, 0.10), transparent 62%),
+      radial-gradient(70% 55% at 94% 2%, rgba(92, 136, 176, 0.09), transparent 60%),
+      linear-gradient(180deg, #060b0c 0%, #05090a 48%, #081011 100%);
+  }
+
+  .floorplan {
+    position: absolute;
+    left: -4%;
+    bottom: -1px;
+    width: 108%;
+    height: 44vh;
+    opacity: 0.55;
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.7) 42%, transparent 94%);
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.7) 42%, transparent 94%);
+  }
+
+  .scene::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 18% 24%, rgba(220, 242, 235, 0.34), transparent 70%),
+      radial-gradient(1px 1px at 72% 16%, rgba(220, 242, 235, 0.26), transparent 70%),
+      radial-gradient(1px 1px at 84% 38%, rgba(160, 210, 205, 0.24), transparent 70%),
+      radial-gradient(1.5px 1.5px at 33% 44%, rgba(220, 242, 235, 0.16), transparent 70%),
+      radial-gradient(1px 1px at 58% 9%, rgba(220, 242, 235, 0.2), transparent 70%),
+      radial-gradient(1px 1px at 44% 31%, rgba(160, 210, 205, 0.15), transparent 70%),
+      radial-gradient(2px 2px at 91% 12%, rgba(220, 242, 235, 0.16), transparent 70%);
+    background-repeat: no-repeat;
+    opacity: 0.75;
+  }
+
+  .horizon {
+    position: absolute;
+    left: 50%;
+    bottom: 22vh;
+    width: 118vw;
+    height: 34vh;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at 50% 100%, rgba(255, 142, 84, 0.15), rgba(255, 142, 84, 0.04) 38%, transparent 68%);
+    filter: blur(16px);
+  }
+
+  .beam {
+    position: absolute;
+    top: -24vh;
+    width: 38vw;
+    height: 148vh;
+    filter: blur(34px);
+    opacity: 0.55;
+  }
+
+  .beam-a {
+    left: 8vw;
+    transform: rotate(16deg);
+    background: linear-gradient(90deg, transparent, rgba(90, 190, 175, 0.065), transparent);
+  }
+
+  .beam-b {
+    right: 2vw;
+    transform: rotate(-14deg);
+    background: linear-gradient(90deg, transparent, rgba(110, 156, 204, 0.05), transparent);
+  }
+
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(125% 100% at 50% 50%, transparent 52%, rgba(2, 5, 6, 0.58) 100%),
+      linear-gradient(180deg, rgba(2, 5, 6, 0.32), transparent 17%, transparent 82%, rgba(2, 5, 6, 0.44));
+  }
+
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px);
+    opacity: 0.45;
+  }
+
+  /* ---------- shared HUD chrome ---------- */
+
+  .hud {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .frame {
+    position: absolute;
+    padding: 1px;
+    background: linear-gradient(150deg, rgba(214, 242, 233, 0.34), rgba(214, 242, 233, 0.06) 42%, rgba(214, 242, 233, 0.24));
+    clip-path: var(--notch);
+    filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.34));
+  }
+
+  .frame__body {
+    position: relative;
+    clip-path: var(--notch);
+    background: linear-gradient(155deg, rgba(10, 18, 20, 0.9), rgba(5, 10, 11, 0.62) 62%, rgba(8, 15, 16, 0.86));
+    -webkit-backdrop-filter: blur(9px) saturate(1.05);
+    backdrop-filter: blur(9px) saturate(1.05);
+  }
+
+  .eyebrow,
+  .micro {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .eyebrow {
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .micro {
+    font-size: 8px;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+  }
+
+  /* ---------- vitals ---------- */
+
+  .vitals {
+    top: calc(var(--pad) + env(safe-area-inset-top, 0px));
+    left: calc(var(--pad) + env(safe-area-inset-left, 0px));
+    width: clamp(318px, 29vw, 404px);
+  }
+
+  .vitals .frame__body { padding: 13px 15px 12px; }
+
+  .vitals-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    flex: none;
+    background: var(--lime);
+    box-shadow: 0 0 8px rgba(217, 242, 75, 0.55);
+    animation: blink 2.6s ease-in-out infinite;
+  }
+
+  .vitals-id { margin-left: auto; }
+
+  .vitals-main {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .portrait {
+    position: relative;
+    width: 58px;
+    height: 66px;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: #081112;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+  }
+
+  .portrait svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .portrait::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+  }
+
+  .portrait-tag {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    z-index: 1;
+    padding: 1px 3px;
+    background: rgba(4, 9, 10, 0.82);
+    color: var(--lime);
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .meters {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .meter-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .meter-name {
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .meter-name::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: 1px;
+    background: currentColor;
+  }
+
+  .meter.shield .meter-name { color: #8ad8e2; }
+  .meter.health .meter-name { color: #ff9a7a; }
+
+  .meter-read {
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meter-read b { font-weight: 600; }
+
+  .meter-read span {
+    margin-left: 2px;
+    font-size: 9px;
+    color: var(--faint);
+  }
+
+  .track {
+    position: relative;
+    height: 6px;
+    overflow: hidden;
+    background: rgba(233, 243, 238, 0.07);
+  }
+
+  .health .track { height: 11px; }
+
+  .track::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background-image: linear-gradient(90deg, rgba(5, 10, 11, 0.72) 1px, transparent 1px);
+    background-size: 10% 100%;
+    pointer-events: none;
+  }
+
+  .fill {
+    display: block;
+    height: 100%;
+    width: var(--v);
+    position: relative;
+  }
+
+  .shield .fill {
+    background: linear-gradient(90deg, #2f9db6, #8ae9f3 92%);
+    box-shadow: 0 0 12px rgba(102, 217, 232, 0.2);
+  }
+
+  .health .fill {
+    background: linear-gradient(90deg, #e65840, #ff8b52 92%);
+    box-shadow: 0 0 14px rgba(255, 95, 72, 0.18);
+  }
+
+  .fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.26), transparent 52%);
+  }
+
+  .vitals-foot {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-top: 11px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(198, 230, 219, 0.09);
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vitals-foot i {
+    margin-right: 3px;
+    font-style: normal;
+    color: var(--faint);
+  }
+
+  .vitals-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    color: rgba(217, 242, 75, 0.78);
+  }
+
+  .link-dot {
+    width: 3px;
+    height: 3px;
+    background: var(--lime);
+  }
+
+  /* ---------- score ---------- */
+
+  .score {
+    top: calc(var(--pad) + env(safe-area-inset-top, 0px));
+    right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+    width: clamp(206px, 19vw, 258px);
+  }
+
+  .score .frame__body { padding: 13px 15px 14px; }
+
+  .score-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .level-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    border: 1px solid rgba(217, 242, 75, 0.34);
+    background: rgba(217, 242, 75, 0.055);
+    font-family: var(--mono);
+    line-height: 1;
+  }
+
+  .level-pill span {
+    font-size: 7px;
+    letter-spacing: 0.16em;
+    color: rgba(217, 242, 75, 0.68);
+  }
+
+  .level-pill b {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--lime);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .score-line {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 9px;
+  }
+
+  .score-value {
+    font-size: clamp(36px, 3.6vw, 50px);
+    font-weight: 600;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    text-shadow: 0 0 26px rgba(217, 242, 75, 0.1);
+  }
+
+  .combo {
+    padding-bottom: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--lime);
+  }
+
+  .score-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .score-bar {
+    flex: 1;
+    height: 2px;
+    background: rgba(233, 243, 238, 0.1);
+  }
+
+  .score-bar i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(217, 242, 75, 0.45), var(--lime));
+  }
+
+  .score-foot .micro {
+    font-size: 7.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .score-foot .xp-value {
+    color: rgba(233, 243, 238, 0.55);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- minimap ---------- */
+
+  .map {
+    right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+    width: var(--map);
+  }
+
+  .map .frame__body { padding: 10px; }
+
+  .map-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .map-head .micro { font-size: 7.5px; }
+
+  .map-view {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid rgba(102, 217, 232, 0.22);
+    background:
+      radial-gradient(90% 90% at 50% 50%, rgba(26, 59, 60, 0.32), rgba(5, 11, 12, 0.55) 72%),
+      linear-gradient(180deg, rgba(9, 18, 19, 0.85), rgba(5, 10, 11, 0.92));
+    box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.55);
+  }
+
+  .map-view::before,
+  .map-view::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    background: rgba(102, 217, 232, 0.11);
+  }
+
+  .map-view::before {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+  }
+
+  .map-view::after {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+  }
+
+  .map-grid {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.6;
+    background-image:
+      linear-gradient(rgba(126, 196, 190, 0.13) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126, 196, 190, 0.13) 1px, transparent 1px);
+    background-size: 20% 20%;
+  }
+
+  .map-terrain {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .ring.r1 {
+    width: 46%;
+    height: 46%;
+    border: 1px dashed rgba(102, 217, 232, 0.16);
+  }
+
+  .ring.r2 {
+    width: 76%;
+    height: 76%;
+    border: 1px solid rgba(102, 217, 232, 0.08);
+  }
+
+  .sweep {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: conic-gradient(from 0deg at 50% 50%, rgba(102, 217, 232, 0.16), rgba(102, 217, 232, 0.02) 52deg, transparent 88deg 360deg);
+    animation: radar 9s linear infinite;
+    pointer-events: none;
+  }
+
+  .sweep::after {
+    content: "";
+    position: absolute;
+    left: calc(50% - 0.5px);
+    top: 0;
+    width: 1px;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(102, 217, 232, 0.4), transparent);
+    transform-origin: 50% 100%;
+  }
+
+  .blip {
+    position: absolute;
+    z-index: 5;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .blip::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    opacity: 0.28;
+  }
+
+  .blip.b1 { left: 26%; top: 32%; color: var(--amber); }
+  .blip.b2 { left: 70%; top: 61%; color: var(--hp); }
+  .blip.b3 { left: 38%; top: 74%; width: 3px; height: 3px; color: var(--cyan); }
+
+  .player-halo {
+    position: absolute;
+    left: 54%;
+    top: 52%;
+    z-index: 5;
+    width: 26px;
+    height: 26px;
+    border: 1px solid rgba(217, 242, 75, 0.24);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .player {
+    position: absolute;
+    left: 54%;
+    top: 52%;
+    z-index: 6;
+    width: 0;
+    height: 0;
+    border-left: 4.5px solid transparent;
+    border-right: 4.5px solid transparent;
+    border-bottom: 10px solid var(--lime);
+    transform: translate(-50%, -58%) rotate(24deg);
+    filter: drop-shadow(0 0 6px rgba(217, 242, 75, 0.45));
+  }
+
+  .map-n {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    z-index: 6;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 7px;
+    letter-spacing: 0.1em;
+    color: rgba(102, 217, 232, 0.55);
+  }
+
+  .mk {
+    position: absolute;
+    z-index: 6;
+    width: 7px;
+    height: 7px;
+    border: 0 solid rgba(102, 217, 232, 0.4);
+  }
+
+  .mk-tl { left: 4px; top: 4px; border-top-width: 1px; border-left-width: 1px; }
+  .mk-tr { right: 4px; top: 4px; border-top-width: 1px; border-right-width: 1px; }
+  .mk-bl { left: 4px; bottom: 4px; border-bottom-width: 1px; border-left-width: 1px; }
+  .mk-br { right: 4px; bottom: 4px; border-bottom-width: 1px; border-right-width: 1px; }
+
+  .map-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 7px;
+  }
+
+  .map-foot .micro { font-size: 7.5px; letter-spacing: 0.09em; }
+
+  /* ---------- loadout ---------- */
+
+  .loadout {
+    left: 50%;
+    bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+    width: min(620px, calc(100vw - 2 * var(--pad) - 2 * var(--map) - 40px));
+    transform: translateX(-50%);
+  }
+
+  .loadout .frame__body { padding: 10px 11px 11px; }
+
+  .loadout-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 2px;
+    margin-bottom: 8px;
+  }
+
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: clamp(5px, 0.75vw, 9px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid rgba(198, 230, 219, 0.14);
+    background: rgba(4, 9, 10, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    color: #d6e6df;
+  }
+
+  .slot.is-filled {
+    border-color: rgba(198, 230, 219, 0.22);
+    background: linear-gradient(155deg, rgba(38, 58, 56, 0.55), rgba(7, 13, 14, 0.62));
+  }
+
+  .slot.is-filled::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(198, 230, 219, 0.055);
+    pointer-events: none;
+  }
+
+  .slot.is-empty {
+    background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(255, 255, 255, 0.025) 7px 8px);
+  }
+
+  .slot.is-active {
+    border-color: rgba(217, 242, 75, 0.78);
+    background: linear-gradient(155deg, rgba(51, 66, 36, 0.6), rgba(12, 18, 10, 0.72));
+    color: var(--lime);
+    box-shadow: inset 0 0 0 1px rgba(217, 242, 75, 0.14), 0 0 16px rgba(217, 242, 75, 0.09);
+  }
+
+  .slot.is-active::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: -1px;
+    height: 2px;
+    background: var(--lime);
+  }
+
+  .slot.is-active::after { border-color: rgba(217, 242, 75, 0.1); }
+
+  .slot-key {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-family: var(--mono);
+    font-size: 8px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+  }
+
+  .slot.is-empty .slot-key { color: rgba(233, 243, 238, 0.2); }
+
+  .slot-count {
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    padding: 1px 2px;
+    background: rgba(4, 8, 9, 0.76);
+    font-family: var(--mono);
+    font-size: 8.5px;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slot.is-active .slot-count { color: var(--lime); }
+
+  .item-icon {
+    display: block;
+    width: clamp(20px, 2.2vw, 27px);
+    height: auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ---------- peripheral marks ---------- */
+
+  .reticle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
+  }
+
+  .ret {
+    position: absolute;
+    background: rgba(225, 243, 235, 0.55);
+  }
+
+  .ret-t { left: 50%; top: 0; width: 1px; height: 7px; }
+  .ret-b { left: 50%; bottom: 0; width: 1px; height: 7px; }
+  .ret-l { top: 50%; left: 0; height: 1px; width: 7px; }
+  .ret-r { top: 50%; right: 0; height: 1px; width: 7px; }
+
+  .reticle::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 2px;
+    margin: -1px 0 0 -1px;
+    background: rgba(217, 242, 75, 0.8);
+  }
+
+  .sysline {
+    position: absolute;
+    left: calc(var(--pad) + env(safe-area-inset-left, 0px));
+    bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(145, 168, 160, 0.52);
+  }
+
+  .sys-dot {
+    width: 4px;
+    height: 4px;
+    background: rgba(145, 168, 160, 0.6);
+  }
+
+  .sys-sep {
+    width: 16px;
+    height: 1px;
+    background: rgba(145, 168, 160, 0.28);
+  }
+
+  /* ---------- motion ---------- */
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  @keyframes radar {
+    to { transform: rotate(1turn); }
+  }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 1100px) {
+    .sysline { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    :root {
+      --pad: 14px;
+      --cut: 11px;
+      --map: 124px;
+    }
+
+    .vitals { width: calc(57vw - var(--pad)); }
+    .score { width: calc(41vw - var(--pad)); }
+
+    .vitals .frame__body { padding: 10px 11px; }
+    .score .frame__body { padding: 10px 11px; }
+
+    .vitals-head { margin-bottom: 9px; }
+    .vitals-id { display: none; }
+    .portrait { display: none; }
+    .vitals-main { gap: 0; }
+    .vitals-foot { display: none; }
+
+    .meter-read { font-size: 12px; }
+    .meter-read span { font-size: 8px; }
+    .meters { gap: 9px; }
+
+    .score-line { margin-top: 8px; }
+    .score-value { font-size: clamp(24px, 7.5vw, 34px); }
+    .score-foot { display: none; }
+    .combo { display: none; }
+
+    .map {
+      bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+      width: var(--map);
+    }
+
+    .map .frame__body { padding: 8px; }
+    .map-head { margin-bottom: 6px; }
+    .map-foot .micro { font-size: 7px; }
+
+    .loadout {
+      width: calc(100vw - 2 * var(--pad));
+    }
+
+    .loadout .frame__body { padding: 9px 9px 10px; }
+    .loadout-head { margin-bottom: 7px; }
+    .slots { gap: 5px; }
+
+    .item-icon { width: 21px; }
+
+    .reticle { display: none; }
+  }
+
+  @media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+    :root {
+      --pad: 10px;
+      --cut: 10px;
+    }
+
+    .vitals {
+      width: clamp(250px, 29vw, 340px);
+    }
+
+    .score {
+      width: clamp(180px, 21vw, 230px);
+    }
+
+    .vitals .frame__body,
+    .score .frame__body { padding: 10px 12px; }
+
+    .vitals-foot,
+    .portrait { display: none; }
+
+    .vitals-head { margin-bottom: 8px; }
+    .score-value { font-size: clamp(26px, 4vw, 38px); }
+    .score-foot { display: none; }
+
+    .map {
+      bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+      width: 124px;
+    }
+
+    .map .frame__body { padding: 8px; }
+
+    .loadout {
+      width: min(520px, calc(100vw - 2 * var(--pad) - 2 * 124px - 28px));
+    }
+
+    .loadout .frame__body { padding: 9px; }
+    .slots { gap: 5px; }
+    .item-icon { width: 21px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot,
+    .sweep { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <svg class="floorplan" viewBox="0 0 1440 420" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="grid-fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#94d0c0" stop-opacity="0"/>
+          <stop offset="0.34" stop-color="#94d0c0" stop-opacity="0.34"/>
+          <stop offset="1" stop-color="#94d0c0" stop-opacity="0.8"/>
+        </linearGradient>
+      </defs>
+      <g fill="none" stroke="url(#grid-fade)" stroke-width="1">
+        <path d="M720 -20 L-1040 420"/>
+        <path d="M720 -20 L-820 420"/>
+        <path d="M720 -20 L-600 420"/>
+        <path d="M720 -20 L-380 420"/>
+        <path d="M720 -20 L-160 420"/>
+        <path d="M720 -20 L60 420"/>
+        <path d="M720 -20 L280 420"/>
+        <path d="M720 -20 L500 420"/>
+        <path d="M720 -20 L720 420"/>
+        <path d="M720 -20 L940 420"/>
+        <path d="M720 -20 L1160 420"/>
+        <path d="M720 -20 L1380 420"/>
+        <path d="M720 -20 L1600 420"/>
+        <path d="M720 -20 L1820 420"/>
+        <path d="M720 -20 L2040 420"/>
+        <path d="M720 -20 L2260 420"/>
+        <path d="M720 -20 L2480 420"/>
+        <path d="M0 18H1440"/>
+        <path d="M0 42H1440"/>
+        <path d="M0 75H1440"/>
+        <path d="M0 118H1440"/>
+        <path d="M0 172H1440"/>
+        <path d="M0 238H1440"/>
+        <path d="M0 318H1440"/>
+        <path d="M0 412H1440"/>
+      </g>
+    </svg>
+    <div class="horizon"></div>
+    <div class="beam beam-a"></div>
+    <div class="beam beam-b"></div>
+  </div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <main class="hud">
+    <div class="reticle" aria-hidden="true">
+      <span class="ret ret-t"></span>
+      <span class="ret ret-b"></span>
+      <span class="ret ret-l"></span>
+      <span class="ret ret-r"></span>
+    </div>
+
+    <!-- top left: health + shield -->
+    <section class="frame vitals" aria-label="生命值与护盾">
+      <div class="frame__body">
+        <div class="vitals-head">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="eyebrow">Vitals</span>
+          <span class="micro vitals-id">OPR // V-07</span>
+        </div>
+
+        <div class="vitals-main">
+          <div class="portrait" aria-hidden="true">
+            <svg viewBox="0 0 58 68" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="armor-plate" x1="0" y1="0" x2="0.55" y2="1">
+                  <stop offset="0" stop-color="#3b5252"/>
+                  <stop offset="0.55" stop-color="#1b2d2e"/>
+                  <stop offset="1" stop-color="#0d1819"/>
+                </linearGradient>
+                <linearGradient id="visor-glass" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#327e8c"/>
+                  <stop offset="0.48" stop-color="#8ae9f3"/>
+                  <stop offset="1" stop-color="#2b707d"/>
+                </linearGradient>
+              </defs>
+              <rect width="58" height="68" fill="#081112"/>
+              <g stroke="rgba(160,200,190,0.1)" stroke-width="0.6">
+                <line x1="0" y1="18" x2="58" y2="18"/>
+                <line x1="0" y1="52" x2="58" y2="52"/>
+                <line x1="13" y1="0" x2="13" y2="68" opacity="0.4"/>
+                <line x1="45" y1="0" x2="45" y2="68" opacity="0.4"/>
+              </g>
+              <path d="M6 68c0.8-12.5 7-20.5 17-23h12c10 2.5 16.2 10.5 17 23Z" fill="url(#armor-plate)" stroke="rgba(150,195,182,0.3)" stroke-width="1"/>
+              <path d="M23 40h12v9H23z" fill="#132324" stroke="rgba(150,195,182,0.2)" stroke-width="0.8"/>
+              <path d="M29 8c8.2 0 14 6.2 14 14.6V30c0 8-6.2 13.2-14 13.2S15 38 15 30v-7.4C15 14.2 20.8 8 29 8Z" fill="url(#armor-plate)" stroke="rgba(150,195,182,0.42)" stroke-width="1"/>
+              <path d="M15.5 22.5c-2 2.5-2.8 5.4-2.4 9.2M42.5 22.5c2 2.5 2.8 5.4 2.4 9.2" fill="none" stroke="rgba(102,217,232,0.2)" stroke-width="0.8"/>
+              <path d="M18.5 25 29 28.2 39.5 25v5.2L29 35.5l-10.5-5.3Z" fill="url(#visor-glass)" opacity="0.92"/>
+              <path d="M21.5 27.8 29 30l7.5-2.2" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.6"/>
+              <path d="M24.5 39.5h9M25.5 42h7" stroke="rgba(150,195,182,0.28)" stroke-width="0.8"/>
+              <path d="M29 8v5" stroke="rgba(190,225,215,0.35)" stroke-width="1"/>
+              <path d="M20 50h18v10H20z" fill="rgba(12,23,24,0.55)" stroke="rgba(150,195,182,0.22)" stroke-width="0.8"/>
+              <path d="M29 50v10M23.5 55h11" stroke="rgba(150,195,182,0.18)" stroke-width="0.7"/>
+              <circle cx="29" cy="47.5" r="1.3" fill="#d9f24b" opacity="0.85"/>
+            </svg>
+            <span class="portrait-tag">07</span>
+          </div>
+
+          <div class="meters">
+            <div class="meter shield">
+              <div class="meter-head">
+                <span class="meter-name">Shield</span>
+                <span class="meter-read"><b>62</b><span>/ 75</span></span>
+              </div>
+              <div class="track">
+                <span class="fill" style="--v: 82.7%"></span>
+              </div>
+            </div>
+
+            <div class="meter health">
+              <div class="meter-head">
+                <span class="meter-name">Health</span>
+                <span class="meter-read"><b>84</b><span>/ 100</span></span>
+              </div>
+              <div class="track">
+                <span class="fill" style="--v: 84%"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vitals-foot">
+          <span><i>O₂</i>98%</span>
+          <span><i>ARM</i>042</span>
+          <span class="vitals-link"><span class="link-dot" aria-hidden="true"></span>Link stable</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- top right: score + level -->
+    <section class="frame score" aria-label="分数与关卡">
+      <div class="frame__body">
+        <div class="score-head">
+          <span class="eyebrow">Score</span>
+          <span class="level-pill" aria-label="等级 12"><span>LV</span><b>12</b></span>
+        </div>
+
+        <div class="score-line">
+          <span class="score-value">24,580</span>
+          <span class="combo">×3</span>
+        </div>
+
+        <div class="score-foot" aria-hidden="true">
+          <span class="micro">Next</span>
+          <span class="score-bar"><i style="width: 64%"></i></span>
+          <span class="micro xp-value">640</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- bottom right: minimap placeholder -->
+    <section class="frame map" aria-label="小地图占位">
+      <div class="frame__body">
+        <div class="map-head">
+          <span class="eyebrow">Tacmap</span>
+          <span class="micro">S-07</span>
+        </div>
+
+        <div class="map-view" aria-hidden="true">
+          <div class="map-grid"></div>
+          <svg class="map-terrain" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <g fill="none" stroke="rgba(102,217,232,0.13)" stroke-width="0.7">
+              <path d="M-8 74 C10 62 20 82 38 68 S64 48 108 60"/>
+              <path d="M-8 86 C14 74 28 92 48 78 S76 60 108 72"/>
+              <path d="M14 -6 C22 16 8 30 20 46 S36 76 26 106"/>
+              <path d="M72 -6 C66 20 82 34 70 52 S58 84 70 106"/>
+            </g>
+            <path d="M-5 30 C22 34 38 24 54 38 S82 50 105 42" fill="none" stroke="rgba(255,180,87,0.16)" stroke-width="0.7" stroke-dasharray="3 4"/>
+          </svg>
+
+          <span class="ring r1"></span>
+          <span class="ring r2"></span>
+          <span class="sweep"></span>
+
+          <span class="blip b1"></span>
+          <span class="blip b2"></span>
+          <span class="blip b3"></span>
+          <span class="player-halo"></span>
+          <span class="player"></span>
+
+          <span class="map-n">N</span>
+          <span class="mk mk-tl"></span>
+          <span class="mk mk-tr"></span>
+          <span class="mk mk-bl"></span>
+          <span class="mk mk-br"></span>
+        </div>
+
+        <div class="map-foot">
+          <span class="micro">Scan 74%</span>
+          <span class="micro">Grid C4</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- bottom center: 8-slot loadout -->
+    <section class="frame loadout" aria-label="背包，共 8 格">
+      <div class="frame__body">
+        <div class="loadout-head">
+          <span class="eyebrow">Loadout</span>
+          <span class="micro">05 / 08 Slots</span>
+        </div>
+
+        <ul class="slots">
+          <li class="slot is-filled is-active" aria-label="1 号槽位，医疗包，2 个">
+            <span class="slot-key" aria-hidden="true">1</span>
+            <svg class="item-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3.75" y="6.75" width="16.5" height="12.5" rx="2"/>
+              <path d="M9 6.75V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v1.25"/>
+              <path d="M12 10v6M9 13h6"/>
+            </svg>
+            <span class="slot-count" aria-hidden="true">×2</span>
+          </li>
+
+          <li class="slot is-filled" aria-label="2 号槽位，弹药，3 个">
+            <span class="slot-key" aria-hidden="true">2</span>
+            <svg class="item-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.5 20.5V7l2.2-3h4.6l2.2 3v13.5z"/>
+              <path d="M7.5 10h9M7.5 14h9M7.5 18h9"/>
+            </svg>
+            <span class="slot-count" aria-hidden="true">×3</span>
+          </li>
+
+          <li class="slot is-filled" aria-label="3 号槽位，手雷">
+            <span class="slot-key" aria-hidden="true">3</span>
+            <svg class="item-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 8.5c-2.4 1.6-3.5 4-3.5 6.6a6 6 0 0 0 12 0c0-2.6-1.2-5-3.5-6.6Z"/>
+              <path d="M10 8V6h4v2M12 3v3M14.5 6.5l2-1.5M9.5 6.5l-2-1.5"/>
+              <path d="M12 12v4M10 14h4"/>
+            </svg>
+          </li>
+
+          <li class="slot is-filled" aria-label="4 号槽位，护盾电池">
+            <span class="slot-key" aria-hidden="true">4</span>
+            <svg class="item-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2.75 19 6.9v6.4L12 21.25 5 13.3V6.9Z"/>
+              <path d="m12.7 7.5-3.2 5h2.8l-1 4 3.5-5h-2.8Z"/>
+            </svg>
+          </li>
+
+          <li class="slot is-filled" aria-label="5 号槽位，通行卡">
+            <span class="slot-key" aria-hidden="true">5</span>
+            <svg class="item-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3.5" y="6.5" width="17" height="11" rx="1.5"/>
+              <path d="M3.5 10h17M7 14h4"/>
+              <circle cx="16.75" cy="14" r="1.1"/>
+            </svg>
+          </li>
+
+          <li class="slot is-empty" aria-label="6 号槽位，空">
+            <span class="slot-key" aria-hidden="true">6</span>
+          </li>
+
+          <li class="slot is-empty" aria-label="7 号槽位，空">
+            <span class="slot-key" aria-hidden="true">7</span>
+          </li>
+
+          <li class="slot is-empty" aria-label="8 号槽位，空">
+            <span class="slot-key" aria-hidden="true">8</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="sysline" aria-hidden="true">
+      <span class="sys-dot"></span>
+      <span>System nominal</span>
+      <span class="sys-sep"></span>
+      <span>Build 0.9.4</span>
+    </div>
+  </main>
+</body>
+</html>

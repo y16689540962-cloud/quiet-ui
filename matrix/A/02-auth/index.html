@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="登录或创建 Kestrel 工作区。">
+<title>登录 · Kestrel</title>
+<style>
+  :root{
+    --ink: #121816;
+    --ink-soft: #2c3531;
+    --muted: #6d746f;
+    --muted-light: #979d96;
+    --line: #e4ded3;
+    --line-strong: #d2cabd;
+    --paper: #f2eee7;
+    --card: #fffdfa;
+    --accent: #1f6f57;
+    --accent-dark: #175441;
+    --accent-soft: rgba(31, 111, 87, .16);
+    --radius: 20px;
+    --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color-scheme: light;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ -webkit-text-size-adjust: 100%; }
+  body{
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a{ color: inherit; }
+  button, input{ font: inherit; }
+
+  /* ---------- 布局 ---------- */
+  .shell{
+    min-height: 100dvh;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+    gap: 18px;
+  }
+
+  /* ---------- 品牌面板 ---------- */
+  .brand{
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 52px;
+    min-height: calc(100dvh - 36px);
+    padding: 40px 44px 28px;
+    border-radius: 24px;
+    color: #eef4ef;
+    background:
+      radial-gradient(120% 82% at 10% 0%, rgba(63, 150, 120, .24), transparent 56%),
+      radial-gradient(90% 62% at 100% 102%, rgba(84, 124, 104, .16), transparent 62%),
+      linear-gradient(178deg, #101a16 0%, #0b110f 100%);
+  }
+  .brand::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(85% 70% at 42% 32%, #000 0%, transparent 100%);
+    mask-image: radial-gradient(85% 70% at 42% 32%, #000 0%, transparent 100%);
+    opacity: .75;
+  }
+
+  .wordmark{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .015em;
+    color: #f4f8f4;
+  }
+  .wordmark svg{ flex: none; }
+  .wordmark small{
+    margin-left: 2px;
+    padding: 2px 7px;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(238, 244, 240, .5);
+  }
+
+  .brand__body{ max-width: 440px; }
+  .brand h2{
+    margin: 0 0 18px;
+    font-size: clamp(30px, 2.7vw, 42px);
+    font-weight: 600;
+    line-height: 1.16;
+    letter-spacing: -.028em;
+    color: #f1f6f2;
+  }
+  .brand h2 .hl{ color: #9fe6c6; }
+  .brand__lede{
+    margin: 0;
+    max-width: 34ch;
+    font-size: 15px;
+    line-height: 1.75;
+    color: rgba(233, 241, 236, .62);
+  }
+
+  .features{
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 14px;
+  }
+  .features li{
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    font-size: 14.5px;
+    color: rgba(240, 246, 242, .82);
+  }
+  .features svg{
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: #7fd6b2;
+    transform: translateY(1px);
+  }
+
+  .brand__foot{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    font-size: 12.5px;
+    color: rgba(233, 241, 236, .4);
+  }
+  .status{
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: rgba(233, 241, 236, .55);
+  }
+  .status::before{
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #58c79a;
+    box-shadow: 0 0 0 3px rgba(88, 199, 154, .14);
+  }
+
+  /* ---------- 表单区 ---------- */
+  .pane{
+    display: grid;
+    place-items: center;
+    padding: 32px 26px;
+  }
+  .card{
+    width: 100%;
+    max-width: 424px;
+    padding: 34px 34px 26px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 2px rgba(18, 24, 22, .04),
+      0 30px 64px -42px rgba(18, 24, 22, .38);
+  }
+
+  .card h1{
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -.025em;
+    color: var(--ink);
+  }
+  .card__sub{
+    margin: 0 0 26px;
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+
+  .field{ margin-bottom: 16px; }
+  .label-row{
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+  .label-row label{
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--ink-soft);
+  }
+  .label-row a{
+    font-size: 12.5px;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color .15s ease;
+  }
+  .label-row a:hover{ border-color: currentColor; }
+
+  .control{ position: relative; }
+  .control input{
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 15px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .control input::placeholder{ color: #aaa297; }
+  .control input:hover{ border-color: #c2b9ab; }
+  .control input:focus{
+    outline: none;
+    border-color: var(--accent);
+    background: #fffefb;
+    box-shadow: 0 0 0 3.5px var(--accent-soft);
+  }
+  .control--password input{ padding-right: 48px; }
+
+  .pw-toggle{
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #8b918b;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .pw-toggle:hover{ background: #f2ede4; color: var(--ink-soft); }
+  .pw-toggle svg{ width: 19px; height: 19px; }
+  .pw-toggle .eye-off{ display: none; }
+  .pw-toggle[aria-pressed="true"] .eye{ display: none; }
+  .pw-toggle[aria-pressed="true"] .eye-off{ display: block; }
+
+  .check{
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin: 2px 0 20px;
+    font-size: 13.5px;
+    color: #555c57;
+    cursor: pointer;
+    user-select: none;
+  }
+  .check input{
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .primary{
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .18),
+      0 12px 22px -16px rgba(31, 111, 87, .95);
+    transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+  .primary:hover{ background: var(--accent-dark); }
+  .primary:active{ transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
+  .primary:disabled{ cursor: progress; opacity: .72; }
+
+  .divider{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0 18px;
+    font-size: 12.5px;
+    color: #8d928c;
+  }
+  .divider::before,
+  .divider::after{
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .oauth{ display: grid; gap: 10px; }
+  .oauth button{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 46px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .oauth button svg{ width: 18px; height: 18px; flex: none; }
+  .oauth button:hover{ background: #faf7f1; border-color: #c6bdaf; }
+  .oauth button:active{ transform: translateY(1px); }
+
+  .switch{
+    margin: 22px 0 0;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .switch a{
+    margin-left: 4px;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(31, 111, 87, .35);
+    transition: border-color .15s ease;
+  }
+  .switch a:hover{ border-color: var(--accent); }
+
+  .form-status{
+    margin: 12px 0 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+  }
+  .form-status:empty{ display: none; }
+
+  .legal{
+    margin: 20px 0 0;
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--muted-light);
+    text-align: center;
+  }
+  .legal a{
+    color: inherit;
+    text-underline-offset: 2px;
+  }
+  .legal a:hover{ color: var(--muted); }
+
+  :where(a, button, input):focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .control input:focus-visible{ outline: none; }
+
+  body[data-mode="signup"] .only-signin{ display: none; }
+
+  @media (max-width: 980px){
+    .shell{
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+    .brand{
+      min-height: 0;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      border-radius: 18px;
+    }
+    .brand__body,
+    .brand__foot{ display: none; }
+    .brand::before{ opacity: .45; }
+    .pane{
+      padding: 10px 4px 30px;
+      align-items: start;
+    }
+    .card{ max-width: 468px; margin: 0 auto; }
+  }
+
+  @media (max-width: 560px){
+    .shell{ padding: 12px; gap: 12px; }
+    .brand{ padding: 15px 17px; border-radius: 16px; }
+    .wordmark{ font-size: 16px; }
+    .wordmark small{ display: none; }
+    .card{ padding: 26px 22px 22px; border-radius: 18px; }
+    .card h1{ font-size: 24px; }
+    .pane{ padding: 6px 0 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body data-mode="signin">
+<main class="shell">
+
+  <aside class="brand" aria-label="Kestrel 品牌介绍">
+    <div class="wordmark">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+        <rect x=".75" y=".75" width="34.5" height="34.5" rx="11" fill="#14211c" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+        <path d="M12 9.5v17" stroke="#8fe0bd" stroke-width="3" stroke-linecap="round"/>
+        <path d="M25 9.5 15.4 18 25 26.5" stroke="#eef4ef" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Kestrel
+      <small>Workspace</small>
+    </div>
+
+    <div class="brand__body">
+      <h2>把散落的数据，<br>收进<span class="hl">一个指挥台</span>。</h2>
+      <p class="brand__lede">产品、增长与营收数据放在同一张画布上，让团队在同一个事实来源前做决定，而不是在十个标签页之间找答案。</p>
+
+      <ul class="features">
+        <li>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-opacity=".35" stroke-width="1.2"/>
+            <path d="M6 10.4l2.6 2.6L14.2 7.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          实时看板，接入即用
+        </li>
+        <li>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-opacity=".35" stroke-width="1.2"/>
+            <path d="M6 10.4l2.6 2.6L14.2 7.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          细粒度权限与完整审计日志
+        </li>
+        <li>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-opacity=".35" stroke-width="1.2"/>
+            <path d="M6 10.4l2.6 2.6L14.2 7.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          200+ 数据源，不必维护管道
+        </li>
+      </ul>
+    </div>
+
+    <div class="brand__foot">
+      <span>© 2026 Kestrel Labs</span>
+      <span class="status">所有系统正常</span>
+    </div>
+  </aside>
+
+  <section class="pane">
+    <div class="card">
+      <h1 id="auth-title">欢迎回来</h1>
+      <p class="card__sub" id="auth-sub">登录以继续你的 Kestrel 工作区。</p>
+
+      <form id="auth-form">
+        <div class="field">
+          <div class="label-row">
+            <label for="email">邮箱</label>
+          </div>
+          <div class="control">
+            <input id="email" name="email" type="email" autocomplete="username" inputmode="email"
+                   placeholder="you@company.com" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="password">密码</label>
+            <a class="only-signin" href="#reset">忘记密码？</a>
+          </div>
+          <div class="control control--password">
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   placeholder="至少 8 位字符" minlength="8" required>
+            <button class="pw-toggle" id="pw-toggle" type="button"
+                    aria-label="显示密码" aria-pressed="false" aria-controls="password">
+              <svg class="eye" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2.4 12S6 5.6 12 5.6 21.6 12 21.6 12 18 18.4 12 18.4 2.4 12 2.4 12Z"
+                      stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+              <svg class="eye-off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2.4 12S6 5.6 12 5.6 21.6 12 21.6 12 18 18.4 12 18.4 2.4 12 2.4 12Z"
+                      stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M4 20 20 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="remember" checked>
+          记住我 30 天
+        </label>
+
+        <button class="primary" id="submit" type="submit">登录</button>
+
+        <div class="divider">或使用以下方式</div>
+
+        <div class="oauth">
+          <button type="button" data-provider="Google">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.29 1.4-1.12 2.58-2.36 3.36v2.79h3.83c2.24-2.06 3.55-5.1 3.55-8.39z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.91l-3.83-2.79c-1.08.72-2.45 1.16-4.11 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v2.88C3.27 21.37 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.27 14.5c-.25-.72-.38-1.49-.38-2.5s.14-1.78.38-2.5V6.62H1.29A11.98 11.98 0 0 0 0 12c0 1.94.47 3.77 1.29 5.38l3.98-2.88z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.4-3.4C17.95 1.19 15.24 0 12 0 7.31 0 3.27 2.63 1.29 6.62l3.98 2.88C6.22 6.86 8.87 4.75 12 4.75z"/>
+            </svg>
+            使用 Google 继续
+          </button>
+          <button type="button" data-provider="GitHub">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="color:#1b2420">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            使用 GitHub 继续
+          </button>
+        </div>
+
+        <p class="switch">
+          <span id="switch-text">还没有账号？</span>
+          <a id="switch-mode" href="#signup">免费创建一个</a>
+        </p>
+
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="legal">继续即表示你同意我们的 <a href="#terms">服务条款</a> 与 <a href="#privacy">隐私政策</a>。</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  (function () {
+    var form = document.getElementById('auth-form');
+    var email = document.getElementById('email');
+    var password = document.getElementById('password');
+    var toggle = document.getElementById('pw-toggle');
+    var submit = document.getElementById('submit');
+    var status = document.getElementById('form-status');
+    var title = document.getElementById('auth-title');
+    var subtitle = document.getElementById('auth-sub');
+    var switchText = document.getElementById('switch-text');
+    var switchLink = document.getElementById('switch-mode');
+    var mode = 'signin';
+
+    var copy = {
+      signin: {
+        title: '欢迎回来',
+        sub: '登录以继续你的 Kestrel 工作区。',
+        action: '登录',
+        switchText: '还没有账号？',
+        switchLink: '免费创建一个',
+        href: '#signup',
+        autocomplete: 'current-password'
+      },
+      signup: {
+        title: '创建工作区',
+        sub: '两分钟接入你的第一份数据。',
+        action: '创建账号',
+        switchText: '已经有账号了？',
+        switchLink: '返回登录',
+        href: '#signin',
+        autocomplete: 'new-password'
+      }
+    };
+
+    function setMode(next) {
+      mode = next === 'signup' ? 'signup' : 'signin';
+      var view = copy[mode];
+      document.body.dataset.mode = mode;
+      title.textContent = view.title;
+      subtitle.textContent = view.sub;
+      submit.textContent = view.action;
+      switchText.textContent = view.switchText;
+      switchLink.textContent = view.switchLink;
+      switchLink.setAttribute('href', view.href);
+      password.setAttribute('autocomplete', view.autocomplete);
+      document.title = (mode === 'signup' ? '注册' : '登录') + ' · Kestrel';
+      status.textContent = '';
+    }
+
+    toggle.addEventListener('click', function () {
+      var revealed = password.type === 'password';
+      password.type = revealed ? 'text' : 'password';
+      toggle.setAttribute('aria-pressed', String(revealed));
+      toggle.setAttribute('aria-label', revealed ? '隐藏密码' : '显示密码');
+      password.focus({ preventScroll: true });
+    });
+
+    switchLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      setMode(mode === 'signin' ? 'signup' : 'signin');
+      email.focus({ preventScroll: true });
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      status.textContent = '';
+      var action = copy[mode].action;
+      submit.disabled = true;
+      submit.textContent = mode === 'signup' ? '正在创建…' : '正在登录…';
+
+      window.setTimeout(function () {
+        submit.disabled = false;
+        submit.textContent = action;
+        status.textContent = mode === 'signup'
+          ? '这是界面演示，尚未连接注册接口。'
+          : '这是界面演示，尚未连接登录接口。';
+      }, 900);
+    });
+
+    document.querySelectorAll('.oauth button').forEach(function (button) {
+      button.addEventListener('click', function () {
+        status.textContent = '这是界面演示，' + button.dataset.provider + ' 授权尚未接入。';
+      });
+    });
+
+    if (window.location.hash === '#signup') {
+      setMode('signup');
+    }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marlowe — Overview</title>
+<style>
+  :root{
+    --paper:#F3F2ED;
+    --sheet:#FFFFFF;
+    --ink:#15181B;
+    --muted:#74777D;
+    --faint:#9EA1A6;
+    --line:#E7E5DF;
+    --line-soft:#F1EFEA;
+    --accent:#125C4C;
+    --accent-ink:#1E6A54;
+    --accent-wash:#E9F1EC;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  ::selection{background:#CFE3DA;color:var(--ink)}
+
+  .shell{max-width:1060px;margin:0 auto;padding:40px 24px 64px}
+  .sheet{
+    background:var(--sheet);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:26px 32px 20px;
+    box-shadow:0 1px 2px rgba(21,24,27,.04), 0 28px 56px -40px rgba(21,24,27,.22);
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding-bottom:22px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:-.015em;
+  }
+  .brand svg{display:block}
+  .period{
+    font-size:12px;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    white-space:nowrap;
+    border:0;
+  }
+
+  .kpis{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    padding:28px 0 30px;
+  }
+  .kpi{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    padding-right:32px;
+  }
+  .kpi + .kpi{
+    border-left:1px solid var(--line-soft);
+    padding-left:32px;
+    padding-right:0;
+  }
+  .kpi-label{
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--muted);
+    margin:0 0 12px;
+    letter-spacing:.005em;
+  }
+  .kpi-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .kpi-value{
+    margin:0;
+    font-size:40px;
+    line-height:1;
+    font-weight:600;
+    letter-spacing:-.04em;
+    font-variant-numeric:tabular-nums;
+  }
+  .delta{
+    display:inline-flex;
+    align-items:center;
+    gap:2px;
+    padding:3px 7px 3px 6px;
+    border-radius:6px;
+    background:var(--accent-wash);
+    color:var(--accent-ink);
+    font-size:11.5px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+    transform:translateY(-3px);
+  }
+  .delta svg{display:block;width:8px;height:8px}
+  .spark{
+    display:block;
+    width:150px;
+    height:auto;
+    flex:none;
+    overflow:visible;
+  }
+
+  .chart-block{
+    border-top:1px solid var(--line-soft);
+    padding:24px 0 26px;
+  }
+  .panel-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:4px;
+  }
+  .panel-title{
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .panel-unit{
+    font-size:10.5px;
+    font-weight:600;
+    color:#7C8087;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+  }
+  .chart-scroll{
+    overflow-x:auto;
+    overflow-y:hidden;
+    margin:0 -4px;
+    padding:0 4px;
+  }
+  .chart{
+    display:block;
+    width:100%;
+    height:auto;
+    margin-top:6px;
+  }
+  .chart .grid line{
+    stroke:#EFEDE7;
+    stroke-width:1;
+  }
+  .chart .grid line.base{
+    stroke:#DFDCD4;
+  }
+  .chart .tick{
+    fill:#7E828A;
+    font-size:10.5px;
+    font-variant-numeric:tabular-nums;
+  }
+  .chart .xtick{
+    fill:#7E828A;
+    font-size:10.5px;
+  }
+  .chart .chart-line{
+    fill:none;
+    stroke:var(--accent);
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .chart .chart-area{fill:url(#areaFill)}
+  .chart .end-dot{
+    fill:var(--accent);
+    stroke:#fff;
+    stroke-width:2;
+  }
+  .chart .end-label{
+    fill:var(--ink);
+    font-size:11px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .chart .pt .hit{
+    fill:transparent;
+    pointer-events:all;
+  }
+  .chart .cross{
+    stroke:var(--accent);
+    stroke-width:1;
+    stroke-dasharray:3 4;
+    opacity:0;
+  }
+  .chart .ptdot{
+    fill:var(--accent);
+    stroke:#fff;
+    stroke-width:2;
+    opacity:0;
+  }
+  .chart .tip{
+    opacity:0;
+    pointer-events:none;
+  }
+  .chart .tip rect{fill:#171A1D}
+  .chart .tip text{
+    fill:#fff;
+    font-size:10.5px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .chart .pt:hover .cross,
+  .chart .pt:hover .ptdot,
+  .chart .pt:hover .tip,
+  .chart .pt:focus-within .cross,
+  .chart .pt:focus-within .ptdot,
+  .chart .pt:focus-within .tip{
+    opacity:1;
+  }
+  .cross,.ptdot,.tip{transition:opacity .16s ease}
+
+  .list-block{
+    border-top:1px solid var(--line-soft);
+    padding:24px 0 6px;
+  }
+  .list-block .panel-head{margin-bottom:14px}
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+    font-size:13.5px;
+  }
+  th:nth-child(1){width:26%}
+  th:nth-child(2){width:38%}
+  th:nth-child(3){width:18%}
+  th{
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    color:var(--muted);
+    text-align:left;
+    padding:0 0 10px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  td{
+    padding:12px 0;
+    border-bottom:1px solid var(--line-soft);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr{transition:background-color .15s ease}
+  tbody tr:hover td{background:#FBFAF7}
+  .num{text-align:right}
+  .who{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:500;
+    white-space:nowrap;
+  }
+  .avatar{
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    display:grid;
+    place-items:center;
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:.02em;
+    flex:none;
+  }
+  .a1{background:#E7EFEA;color:#2C5B49}
+  .a2{background:#EFEAE0;color:#5E5237}
+  .a3{background:#E9EBF1;color:#454C5F}
+  .a4{background:#F2E8E4;color:#6B463B}
+  td.email{
+    color:var(--muted);
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:260px;
+  }
+  .plan{
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:6px;
+    font-size:11.5px;
+    font-weight:600;
+    line-height:1.35;
+    white-space:nowrap;
+  }
+  .plan.scale{background:var(--accent-wash);color:var(--accent-ink)}
+  .plan.growth{background:#F4EFE4;color:#65583B}
+  .plan.starter{background:#F1F0EC;color:#6B6E74}
+  td.when{
+    color:#4E5257;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+
+  :focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:3px;
+    border-radius:4px;
+  }
+
+  @media (max-width:780px){
+    .spark{display:none}
+  }
+  @media (max-width:720px){
+    .chart .tick,
+    .chart .xtick{font-size:14px}
+    .chart .end-label{font-size:13px}
+  }
+  @media (max-width:520px){
+    .chart .tick,
+    .chart .xtick{font-size:18px}
+    .chart .end-label{font-size:16px}
+  }
+  @media (max-width:400px){
+    th:nth-child(1){width:50%}
+    th:nth-child(3){width:25%}
+    th:nth-child(4){width:25%}
+    .chart .xtick{display:none}
+    .chart .xtick:nth-of-type(3n+1),
+    .chart .xtick:last-of-type{display:inline}
+  }
+
+  @media (max-width:860px){
+    .sheet{padding:22px 22px 16px}
+    .kpi{padding-right:20px}
+    .kpi + .kpi{padding-left:20px}
+    .kpi-value{font-size:34px}
+    .kpi{gap:16px}
+    .spark{width:96px}
+  }
+  @media (max-width:720px){
+    .shell{padding:20px 12px 40px}
+    .kpis{grid-template-columns:1fr;padding:22px 0 24px;gap:22px}
+    .kpi{padding-right:0}
+    .kpi + .kpi{
+      border-left:0;
+      border-top:1px solid var(--line-soft);
+      padding-left:0;
+      padding-top:22px;
+    }
+    .col-email{display:none}
+    th:nth-child(1){width:52%}
+    th:nth-child(3){width:24%}
+    th:nth-child(4){width:24%}
+  }
+  @media (max-width:520px){
+    .sheet{padding:18px 16px 10px;border-radius:14px}
+    .kpi-value{font-size:30px}
+    .period{font-size:11px}
+    .brand{font-size:14px}
+    .delta{transform:translateY(-1px)}
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <main class="sheet">
+      <h1 class="sr-only">Marlowe dashboard</h1>
+
+      <header class="topbar">
+        <div class="brand">
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" focusable="false">
+            <rect width="22" height="22" rx="6" fill="#125C4C"/>
+            <path d="M5.5 14.5 9 10.5l3 2.2 4.5-5.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Marlowe
+        </div>
+        <div class="period">Jan – Dec 2026</div>
+      </header>
+
+      <div class="kpis">
+        <section class="kpi" aria-labelledby="kpi-revenue">
+          <div>
+            <h2 class="kpi-label" id="kpi-revenue">Revenue</h2>
+            <div class="kpi-row">
+              <p class="kpi-value">$48,290</p>
+              <span class="delta">
+                <svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M4 1.2 7 6H1z" fill="currentColor"/></svg>
+                10.3%
+                <span class="sr-only">higher than last month</span>
+              </span>
+            </div>
+          </div>
+          <svg class="spark" viewBox="0 0 128 40" aria-hidden="true" focusable="false">
+            <path class="spark-line" pathLength="1" d="M4.00 36.00 C5.82 35.42 11.27 32.81 14.91 32.55 C18.55 32.28 22.18 35.03 25.82 34.41 C29.45 33.79 33.09 30.11 36.73 28.83 C40.36 27.54 44.00 26.88 47.64 26.70 C51.27 26.52 54.91 28.56 58.55 27.76 C62.18 26.97 65.82 23.29 69.45 21.92 C73.09 20.55 76.73 19.62 80.36 19.53 C84.00 19.44 87.64 22.23 91.27 21.39 C94.91 20.55 98.55 16.38 102.18 14.48 C105.82 12.58 109.45 11.71 113.09 9.96 C116.73 8.22 122.18 4.99 124.00 4.00" fill="none" stroke="#125C4C" stroke-width="1.7" stroke-linecap="round"/>
+            <circle class="spark-dot" cx="124" cy="4" r="2.6" fill="#125C4C"/>
+          </svg>
+        </section>
+
+        <section class="kpi" aria-labelledby="kpi-users">
+          <div>
+            <h2 class="kpi-label" id="kpi-users">Active users</h2>
+            <div class="kpi-row">
+              <p class="kpi-value">12,846</p>
+              <span class="delta">
+                <svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M4 1.2 7 6H1z" fill="currentColor"/></svg>
+                6.1%
+                <span class="sr-only">higher than last month</span>
+              </span>
+            </div>
+          </div>
+          <svg class="spark" viewBox="0 0 128 40" aria-hidden="true" focusable="false">
+            <path class="spark-line" pathLength="1" d="M4.00 36.00 C5.82 35.55 11.27 34.06 14.91 33.32 C18.55 32.59 22.18 31.79 25.82 31.59 C29.45 31.38 33.09 32.55 36.73 32.10 C40.36 31.64 44.00 29.95 47.64 28.84 C51.27 27.73 54.91 26.44 58.55 25.44 C62.18 24.44 65.82 23.70 69.45 22.84 C73.09 21.99 76.73 21.14 80.36 20.31 C84.00 19.48 87.64 19.17 91.27 17.85 C94.91 16.54 98.55 13.85 102.18 12.43 C105.82 11.01 109.45 10.73 113.09 9.32 C116.73 7.92 122.18 4.89 124.00 4.00" fill="none" stroke="#125C4C" stroke-width="1.7" stroke-linecap="round"/>
+            <circle class="spark-dot" cx="124" cy="4" r="2.6" fill="#125C4C"/>
+          </svg>
+        </section>
+      </div>
+
+      <section class="chart-block" aria-labelledby="chart-heading">
+        <div class="panel-head">
+          <h2 class="panel-title" id="chart-heading">Revenue by month</h2>
+          <span class="panel-unit">USD</span>
+        </div>
+        <div class="chart-scroll">
+          <svg class="chart" viewBox="0 0 760 260" role="img" aria-labelledby="chart-title chart-desc">
+            <title id="chart-title">Revenue by month, January to December 2026</title>
+            <desc id="chart-desc">Monthly revenue in thousands of dollars: January 24.2, February 26.8, March 25.4, April 29.6, May 31.2, June 30.4, July 34.8, August 36.6, September 35.2, October 40.4, November 43.8, December 48.3.</desc>
+            <defs>
+              <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#125C4C" stop-opacity=".18"/>
+                <stop offset="1" stop-color="#125C4C" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+
+            <g class="grid" aria-hidden="true">
+              <line x1="52" y1="226" x2="688" y2="226" class="base"/>
+              <line x1="52" y1="184.8" x2="688" y2="184.8"/>
+              <line x1="52" y1="143.6" x2="688" y2="143.6"/>
+              <line x1="52" y1="102.4" x2="688" y2="102.4"/>
+              <line x1="52" y1="61.2" x2="688" y2="61.2"/>
+              <line x1="52" y1="20" x2="688" y2="20"/>
+            </g>
+
+            <g aria-hidden="true">
+              <text class="tick" x="40" y="229.5" text-anchor="end">$0</text>
+              <text class="tick" x="40" y="147.1" text-anchor="end">$20k</text>
+              <text class="tick" x="40" y="64.7" text-anchor="end">$40k</text>
+            </g>
+
+            <path class="chart-area" d="M52.00 126.30 C61.64 124.51 90.55 116.41 109.82 115.58 C129.09 114.76 148.36 123.27 167.64 121.35 C186.91 119.43 206.18 108.03 225.45 104.05 C244.73 100.07 264.00 98.01 283.27 97.46 C302.55 96.91 321.82 103.22 341.09 100.75 C360.36 98.28 379.64 86.88 398.91 82.62 C418.18 78.37 437.45 75.48 456.73 75.21 C476.00 74.93 495.27 83.59 514.55 80.98 C533.82 78.37 553.09 65.46 572.36 59.55 C591.64 53.65 610.91 50.97 630.18 45.54 C649.45 40.12 678.36 30.09 688.00 27.00 L688.00 226.00 L52.00 226.00 Z"/>
+            <path class="chart-line" pathLength="1" d="M52.00 126.30 C61.64 124.51 90.55 116.41 109.82 115.58 C129.09 114.76 148.36 123.27 167.64 121.35 C186.91 119.43 206.18 108.03 225.45 104.05 C244.73 100.07 264.00 98.01 283.27 97.46 C302.55 96.91 321.82 103.22 341.09 100.75 C360.36 98.28 379.64 86.88 398.91 82.62 C418.18 78.37 437.45 75.48 456.73 75.21 C476.00 74.93 495.27 83.59 514.55 80.98 C533.82 78.37 553.09 65.46 572.36 59.55 C591.64 53.65 610.91 50.97 630.18 45.54 C649.45 40.12 678.36 30.09 688.00 27.00"/>
+
+            <g aria-hidden="true">
+              <text class="xtick" x="52" y="246" text-anchor="middle">Jan</text>
+              <text class="xtick" x="109.8" y="246" text-anchor="middle">Feb</text>
+              <text class="xtick" x="167.6" y="246" text-anchor="middle">Mar</text>
+              <text class="xtick" x="225.5" y="246" text-anchor="middle">Apr</text>
+              <text class="xtick" x="283.3" y="246" text-anchor="middle">May</text>
+              <text class="xtick" x="341.1" y="246" text-anchor="middle">Jun</text>
+              <text class="xtick" x="398.9" y="246" text-anchor="middle">Jul</text>
+              <text class="xtick" x="456.7" y="246" text-anchor="middle">Aug</text>
+              <text class="xtick" x="514.5" y="246" text-anchor="middle">Sep</text>
+              <text class="xtick" x="572.4" y="246" text-anchor="middle">Oct</text>
+              <text class="xtick" x="630.2" y="246" text-anchor="middle">Nov</text>
+              <text class="xtick" x="688" y="246" text-anchor="middle">Dec</text>
+            </g>
+
+            <circle class="end-dot" cx="688" cy="27" r="3.5" aria-hidden="true"/>
+            <text class="end-label" x="699" y="31" aria-hidden="true">$48.3k</text>
+
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="23.1" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="52" y1="20" x2="52" y2="226"/>
+              <circle class="ptdot" cx="52" cy="126.3" r="4"/>
+              <g class="tip">
+                <rect x="25" y="90.3" width="54" height="22" rx="6"/>
+                <text x="52" y="105.3" text-anchor="middle">$24.2k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="80.9" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="109.8" y1="20" x2="109.8" y2="226"/>
+              <circle class="ptdot" cx="109.8" cy="115.6" r="4"/>
+              <g class="tip">
+                <rect x="82.8" y="79.6" width="54" height="22" rx="6"/>
+                <text x="109.8" y="94.6" text-anchor="middle">$26.8k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="138.7" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="167.6" y1="20" x2="167.6" y2="226"/>
+              <circle class="ptdot" cx="167.6" cy="121.4" r="4"/>
+              <g class="tip">
+                <rect x="140.6" y="85.4" width="54" height="22" rx="6"/>
+                <text x="167.6" y="100.4" text-anchor="middle">$25.4k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="196.6" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="225.5" y1="20" x2="225.5" y2="226"/>
+              <circle class="ptdot" cx="225.5" cy="104" r="4"/>
+              <g class="tip">
+                <rect x="198.5" y="68" width="54" height="22" rx="6"/>
+                <text x="225.5" y="83" text-anchor="middle">$29.6k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="254.4" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="283.3" y1="20" x2="283.3" y2="226"/>
+              <circle class="ptdot" cx="283.3" cy="97.5" r="4"/>
+              <g class="tip">
+                <rect x="256.3" y="61.5" width="54" height="22" rx="6"/>
+                <text x="283.3" y="76.5" text-anchor="middle">$31.2k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="312.2" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="341.1" y1="20" x2="341.1" y2="226"/>
+              <circle class="ptdot" cx="341.1" cy="100.8" r="4"/>
+              <g class="tip">
+                <rect x="314.1" y="64.8" width="54" height="22" rx="6"/>
+                <text x="341.1" y="79.8" text-anchor="middle">$30.4k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="370" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="398.9" y1="20" x2="398.9" y2="226"/>
+              <circle class="ptdot" cx="398.9" cy="82.6" r="4"/>
+              <g class="tip">
+                <rect x="371.9" y="46.6" width="54" height="22" rx="6"/>
+                <text x="398.9" y="61.6" text-anchor="middle">$34.8k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="427.9" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="456.7" y1="20" x2="456.7" y2="226"/>
+              <circle class="ptdot" cx="456.7" cy="75.2" r="4"/>
+              <g class="tip">
+                <rect x="429.7" y="39.2" width="54" height="22" rx="6"/>
+                <text x="456.7" y="54.2" text-anchor="middle">$36.6k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="485.7" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="514.5" y1="20" x2="514.5" y2="226"/>
+              <circle class="ptdot" cx="514.5" cy="81" r="4"/>
+              <g class="tip">
+                <rect x="487.5" y="45" width="54" height="22" rx="6"/>
+                <text x="514.5" y="60" text-anchor="middle">$35.2k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="543.5" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="572.4" y1="20" x2="572.4" y2="226"/>
+              <circle class="ptdot" cx="572.4" cy="59.6" r="4"/>
+              <g class="tip">
+                <rect x="545.4" y="23.6" width="54" height="22" rx="6"/>
+                <text x="572.4" y="38.6" text-anchor="middle">$40.4k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="601.3" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="630.2" y1="20" x2="630.2" y2="226"/>
+              <circle class="ptdot" cx="630.2" cy="45.5" r="4"/>
+              <g class="tip">
+                <rect x="603.2" y="59.5" width="54" height="22" rx="6"/>
+                <text x="630.2" y="74.5" text-anchor="middle">$43.8k</text>
+              </g>
+            </g>
+            <g class="pt" aria-hidden="true">
+              <rect class="hit" x="659.1" y="20" width="57.8" height="206"/>
+              <line class="cross" x1="688" y1="20" x2="688" y2="226"/>
+              <circle class="ptdot" cx="688" cy="27" r="4"/>
+              <g class="tip">
+                <rect x="661" y="41" width="54" height="22" rx="6"/>
+                <text x="688" y="56" text-anchor="middle">$48.3k</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section class="list-block" aria-labelledby="signups-heading">
+        <div class="panel-head">
+          <h2 class="panel-title" id="signups-heading">Recent signups</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col" class="col-email">Email</th>
+              <th scope="col">Plan</th>
+              <th scope="col" class="num">Signed up</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a1" aria-hidden="true">MO</span>Maya Ortiz</div>
+              </td>
+              <td class="email col-email">maya.ortiz@lumen.co</td>
+              <td><span class="plan scale">Scale</span></td>
+              <td class="num when">Nov 24</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a2" aria-hidden="true">DC</span>Daniel Cho</div>
+              </td>
+              <td class="email col-email">d.cho@northlane.io</td>
+              <td><span class="plan growth">Growth</span></td>
+              <td class="num when">Nov 24</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a3" aria-hidden="true">PR</span>Priya Raman</div>
+              </td>
+              <td class="email col-email">priya@venn.app</td>
+              <td><span class="plan starter">Starter</span></td>
+              <td class="num when">Nov 23</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a4" aria-hidden="true">TB</span>Tomás Berg</div>
+              </td>
+              <td class="email col-email">tomas@harborlay.com</td>
+              <td><span class="plan growth">Growth</span></td>
+              <td class="num when">Nov 22</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a1" aria-hidden="true">AK</span>Alina Kovač</div>
+              </td>
+              <td class="email col-email">alina@tessera.dev</td>
+              <td><span class="plan scale">Scale</span></td>
+              <td class="num when">Nov 21</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="who"><span class="avatar a2" aria-hidden="true">JW</span>Jonah Weiss</div>
+              </td>
+              <td class="email col-email">jonah@weiss.studio</td>
+              <td><span class="plan starter">Starter</span></td>
+              <td class="num when">Nov 20</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
